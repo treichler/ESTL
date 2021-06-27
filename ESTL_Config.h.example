@@ -1,0 +1,189 @@
+//----------------------------------------------------------------------------//
+//  Copyright 2021 Clemens Treichler                                          //
+//                                                                            //
+//  Copying and distribution of this file, with or without modification,      //
+//  are permitted in any medium without royalty, provided the copyright       //
+//  notice and this notice are preserved. This file is offered as-is,         //
+//  without any warranty.                                                     //
+//----------------------------------------------------------------------------//
+
+/**
+ * @file ESTL_Config.h
+ * @brief Embedded Systems Tiny Library configuration
+ *
+ * This is the configuration file for the Embedded Systems Tiny Library.
+ * By default all modules are disabled and they are activated by their
+ * corresponding enable define.
+ * Some modules (E.g. Error, Unit) are always activated at least on a minimal
+ * working basis since they provide essential data-types.
+ * However these modules provide an enable define for extended functionality,
+ * which also means more memory consumption.
+ */
+
+
+#ifndef __ESTL_CONFIG_H__
+#define __ESTL_CONFIG_H__
+
+/**
+ * @ingroup ESTL
+ * @defgroup ESTL_CONFIG  Embedded Systems Tiny Library configuration file
+ * @{
+ */
+
+//-------------------------------------------------------------------------------------------------
+//  Firmware related defines
+//-------------------------------------------------------------------------------------------------
+
+/**
+ * Optionally define a name for the project.
+ * This define could also be set as compiler argument.
+ */
+#define FIRMWARE_NAME           "My Awesome Project"
+
+/**
+ * Optionally define the project's revision.
+ * This define could also be set as compiler argument for example
+ * when it is extracted from a version control system.
+ */
+#define FIRMWARE_REVISION       "0.1"
+
+/**
+ * Give some credit to the open source projects
+ * that bring your firmware up and running.
+ */
+#define OPEN_SOURCE_INFO "This firmware is linked to GNU LGPL licensed source code.\n" \
+                         "See https://github.com/treichler/ESTL for further information."
+
+
+//-------------------------------------------------------------------------------------------------
+//  Storage
+//-------------------------------------------------------------------------------------------------
+
+#define ESTL_ENABLE_STORAGE
+
+// Define image-size for dedicated storage entries
+#define ESTL_STORAGE_PARAMETER_IMAGE_SIZE            (256)   //!< Parameter image size
+#define ESTL_STORAGE_APPLICATION_IMAGE_SIZE            (0)   //!< Application data image size
+#define ESTL_STORAGE_ADAPTIVE_DATA_IMAGE_SIZE          (0)   //!< Adaptive data image size
+
+
+/**
+ * Select storage hardware to be used.
+ * Possible options are:
+ * - ESTL_STORAGE_HARDWARE_FAKE_NV_MEMORY
+ * - ESTL_STORAGE_HARDWARE_I2CEEPROM
+ */
+#define ESTL_STORAGE_HARDWARE        ESTL_STORAGE_HARDWARE_I2CEEPROM
+
+/**
+ * Select connected EEprom, in case ESTL_STORAGE_HARDWARE_I2CEEPROM is used.
+ * Possible options are:
+ * - ESTL_STORAGE_I2CEEPROM_24LC02
+ * - ESTL_STORAGE_I2CEEPROM_24LC04
+ * - ESTL_STORAGE_I2CEEPROM_24LC08
+ * - ESTL_STORAGE_I2CEEPROM_24LC16
+ * - ESTL_STORAGE_I2CEEPROM_24LC32
+ */
+#define ESTL_STORAGE_I2CEEPROM       ESTL_STORAGE_I2CEEPROM_24LC16
+
+/**
+ * Optionally define the EEprom's 7-bit bus address.
+ */
+#define ESTL_STORAGE_I2CEEPROM_7BIT_ADDR     (0x50)
+
+
+//-------------------------------------------------------------------------------------------------
+//  Debug
+//-------------------------------------------------------------------------------------------------
+
+//#define ESTL_ENABLE_DEBUG
+
+/**
+ * Define the number of debug entries.
+ * This value also sets the amount of scope channels.
+ */
+#define ESTL_DEBUG_NR_OF_ENTRIES (4)
+
+
+//-------------------------------------------------------------------------------------------------
+//  Scope -- requires Debug to be enabled
+//-------------------------------------------------------------------------------------------------
+
+//#define ESTL_ENABLE_SCOPE
+
+/**
+ * Define Number of scope sample points
+ * Since each value will be stored in a 32 bit variable the estimated
+ * memory consumption for the scope will be
+ * 4 * ESTL_DEBUG_NR_OF_ENTRIES * ESTL_SCOPE_NR_OF_SAMPLES
+ */
+#define ESTL_SCOPE_NR_OF_SAMPLES (512)
+
+
+//-------------------------------------------------------------------------------------------------
+//  RF - Radio frequency module
+//-------------------------------------------------------------------------------------------------
+
+//#define ESTL_ENABLE_RF
+
+
+//-------------------------------------------------------------------------------------------------
+//  GLCD
+//-------------------------------------------------------------------------------------------------
+
+//#define ESTL_ENABLE_GLCD
+
+
+/**
+ * Select GLCD hardware to be used.
+ * Possible options are:
+ * - ESTL_GLCD_HARDWARE_KS0108
+ * - ESTL_GLCD_HARDWARE_S1D15605
+ * - ESTL_GLCD_HARDWARE_DOGX128
+ */
+#define ESTL_GLCD_HARDWARE        ESTL_LCD_HARDWARE_S1D15605
+
+
+//-------------------------------------------------------------------------------------------------
+//  TODO to be checked if really necessary
+//  Parameter
+//-------------------------------------------------------------------------------------------------
+
+//#define ESTL_ENABLE_PARAMETER
+
+
+//-------------------------------------------------------------------------------------------------
+//  Print
+//-------------------------------------------------------------------------------------------------
+
+//#define PRINT_LONG_SUPPORT
+#define PRINT_Q15_SUPPORT
+
+
+//-------------------------------------------------------------------------------------------------
+//  Terminal CAN interface
+//-------------------------------------------------------------------------------------------------
+
+//#define ESTL_ENABLE_TERMINAL_CANOPEN_PARAMETER
+#define ESTL_TERMINAL_PARAMETER_CANOPEN_BUFFER_SIZE      (1024)
+
+
+//-------------------------------------------------------------------------------------------------
+//  Error
+//-------------------------------------------------------------------------------------------------
+
+//#define ESTL_ENABLE_ERROR_MESSAGES
+
+
+//-------------------------------------------------------------------------------------------------
+//  Unit
+//-------------------------------------------------------------------------------------------------
+
+#define ESTL_ENABLE_UNIT_NAMES
+
+
+/**
+ * @} end of ESTL_CONFIG
+ */
+
+#endif // __ESTL_CONFIG_H__

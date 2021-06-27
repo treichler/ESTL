@@ -1,0 +1,54 @@
+//----------------------------------------------------------------------------//
+//  Copyright 2021 Clemens Treichler                                          //
+//                                                                            //
+//  Copying and distribution of this file, with or without modification,      //
+//  are permitted in any medium without royalty, provided the copyright       //
+//  notice and this notice are preserved. This file is offered as-is,         //
+//  without any warranty.                                                     //
+//----------------------------------------------------------------------------//
+
+/**
+ * @file Parameter_Table.h
+ * @brief Application specific Parameter Table
+ *
+ * This file interfaces the customized parameter table to the
+ * parameter module. There should be no need for any modification,
+ * neither should this file be included anywhere else except Parameter.c
+ * and Parameter_Table.c
+ */
+
+#ifndef __PARAMETER_TABLE_H__
+#define __PARAMETER_TABLE_H__
+
+
+/**
+ * @ingroup PARAMETER
+ * @defgroup PARAMETER_TABLE  Parameter Table
+ * @brief Parameter table and indices
+ *
+ * This module holds the application specific parameter table and its
+ * related indices, which need to be implemented in Parameter_Table.c
+ * and Parameter_TableIndices.h. The file Parameter_Table.h is the
+ * interface between parameter module and application specific parameter
+ * table. There should be no need to modify the latter one.
+ * @{
+ */
+
+
+/**
+ * Get one entry of the parameter table
+ * @param[out]  table_entry             A pointer that will hold the address of the parameter table's entry
+ * @param[in]   index                   The index to the parameter table's entry
+ * @return                              How did the reading of the entry's address succeed
+ *   @retval    OK
+ *   @retval    INDEX_OUT_OF_BOUNDARY   The accessed entry does not exist
+ *   @retval    PARAMETER_ENUM_MISMATCH There is an error in the parameter table's metric
+ */
+error_code_t ParameterTable_GetEntry(const parameter_table_entry_t ** table_entry, parameter_table_index_t index);
+
+
+/**
+ * @}
+ */
+
+#endif // __PARAMETER_TABLE_H__

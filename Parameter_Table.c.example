@@ -1,0 +1,58 @@
+//----------------------------------------------------------------------------//
+//  Copyright 2021 Clemens Treichler                                          //
+//                                                                            //
+//  Copying and distribution of this file, with or without modification,      //
+//  are permitted in any medium without royalty, provided the copyright       //
+//  notice and this notice are preserved. This file is offered as-is,         //
+//  without any warranty.                                                     //
+//----------------------------------------------------------------------------//
+
+/**
+ * @file Parameter_Table.c
+ * @brief Application specific Parameter Table
+ *
+ * This file implements all application specific parameter table entries.
+ */
+
+// essential includes
+#include "ESTL_Config.h"
+#include "ESTL_Types.h"
+#include "Error.h"
+#include "Unit.h"
+#include "Parameter.h"
+#include "Parameter_TableIndices.h"
+#include "Parameter_Table.h"
+
+// application specific includes which provide parameter functions
+#include "FmTuner.h"
+
+
+/**
+ * Define application specific parameter table
+ */
+const parameter_table_entry_t Parameter_table[] = {
+  //                     name         unit            representation            control flags         minimum      nominal      maximum                 function pointer    information/help
+  [PARAM_FM_FREQ]    = {"fm-freq",    UNIT_MEG_HERTZ,     REPR_Q15_1,  LEVEL_2|R_W|NVMEM|INFO,      Q15(87.5),   Q15(91.2),  Q15(108.0),  &FmTuner_FreqParameterFunction,  "FM tuner frequency"},
+  [PARAM_FM_CTRL]    = {"fm-ctrl",    UNIT_NONE,         REPR_HEX_02,  LEVEL_2|R_W|NVMEM|INFO,           0x00,        0x01,        0xFF,  &FmTuner_CtrlParameterFunction,  "FM tuner control bits\r\n0x01: Demodulator on/off\r\n0x80: T-Bias on/off"},
+  [PARAM_TEST_1]     = {"test_1",     UNIT_NONE,            REPR_DEC,   LEVEL_2|R_W|INFO|HIDE,              0,         800,       10000,                               0,  ""},
+  [PARAM_TEST_1]     = {"test_2",     UNIT_NONE,            REPR_DEC,   LEVEL_2|R_W|INFO|HIDE,      INT16_MIN,           0,   INT16_MAX,                               0,  ""},
+};
+
+
+/**
+ * Calculate the number of entries in the previously created parameter table
+ */
+#define PARAMETER_TABLE_NR_OF_ENTRIES   (sizeof(Parameter_table) / sizeof(parameter_table_entry_t))
+
+
+error_code_t ParameterTable_GetEntry(const parameter_table_entry_t ** table_entry, parameter_table_index_t index)
+{
+  if( NR_OF_PARAMETER_TABLE_ENTRIES != PARAMETER_TABLE_NR_OF_ENTRIES )
+    return PARAMETER_ENUM_MISMATCH;
+  if( index >= NR_OF_PARAMETER_TABLE_ENTRIES )
+    return INDEX_OUT_OF_BOUNDARY;
+  *table_entry = &Parameter_table[index];
+//  memcpy(table_entry, &Parameter_table[index], sizeof(parameter_table_entry_t));
+  return OK;
+}
+

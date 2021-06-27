@@ -1,0 +1,54 @@
+//----------------------------------------------------------------------------//
+//  Copyright 2021 Clemens Treichler                                          //
+//                                                                            //
+//  Copying and distribution of this file, with or without modification,      //
+//  are permitted in any medium without royalty, provided the copyright       //
+//  notice and this notice are preserved. This file is offered as-is,         //
+//  without any warranty.                                                     //
+//----------------------------------------------------------------------------//
+
+/**
+ * @file Parameter_TableIndices.h
+ * @brief Indices for application specific Parameter Table
+ *
+ * This file is used to define parameter revision number and to declare
+ * application specific parameter table's indices. Since same indices
+ * are used for initializing the parameter table, this file provides
+ * unique enumerated keywords to every parameter entry. Include this
+ * header file together with Parameter.h to your application's files
+ * which need access to parameter.
+ */
+
+#ifndef __PARAMETER_TABLE_INDICES_H__
+#define __PARAMETER_TABLE_INDICES_H__
+
+/**
+ * @addtogroup PARAMETER_TABLE
+ * @{
+ */
+
+/**
+ * @name  Parameter table's revision
+ * @brief Defines major and minor revision
+ * @{
+ */
+#define PARAMETER_REVISION_MINOR        (1)     //!< Increase in case of minor changes when backward compatibility is still granted
+#define PARAMETER_REVISION_MAJOR        (0)     //!< Increase if backward compatibility is broken and also set minor revision to zero
+/** @} */
+
+/**
+ * Declare parameter table's indices
+ */
+typedef enum {
+  PARAM_FM_FREQ,                        //!< FM receiver's frequency
+  PARAM_FM_CTRL,                        //!< Settings for FM receiver
+  PARAM_TEST_1,                         //!< test parameter 1, just to explain how it works
+  PARAM_TEST_2,                         //!< test parameter 2, just to explain how it works
+  NR_OF_PARAMETER_TABLE_ENTRIES         //!< keep this always as last index, but do not use it for the parameter table
+} parameter_table_index_t;
+
+/**
+ * @}
+ */
+
+#endif // __PARAMETER_TABLE_INDICES_H__

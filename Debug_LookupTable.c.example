@@ -1,0 +1,48 @@
+//----------------------------------------------------------------------------//
+//  Copyright 2021 Clemens Treichler                                          //
+//                                                                            //
+//  Copying and distribution of this file, with or without modification,      //
+//  are permitted in any medium without royalty, provided the copyright       //
+//  notice and this notice are preserved. This file is offered as-is,         //
+//  without any warranty.                                                     //
+//----------------------------------------------------------------------------//
+
+/**
+ * @file Debug_LookupTable.c
+ * @brief Application specific debug lookup-table
+ *
+ * This file holds the references to variables which might be of interest for
+ * debugging and development.
+ * The variables' addresses are collected in a table and so it is possible to
+ * resolve static variables' and structures' addresses without a map-file.
+ */
+
+#include "ESTL_Config.h"
+#include "ESTL_Types.h"
+#include "Debug_LookupTable.h"
+
+// put here includes which hold declarations of variables and structures...
+//#include "Target.h"
+//#include "Application.h"
+
+// ... or tell the compiler that your variables of interest are external.
+extern uint32_t Target_data, crc32_build;
+
+
+/**
+ * Put here the addresses of variables that should be accessible by debug module
+ */
+const uint32_t Debug_address_table[] = {
+  (uint32_t)(&Target_data),
+  (uint32_t)(&crc32_build),
+};
+
+
+uint32_t Debug_LookupTableGetAddress(uint32_t index)
+{
+  if ( index >= (sizeof(Debug_address_table) / sizeof(uint32_t)) )
+    return 0;
+  else
+    return Debug_address_table[index];
+}
+
