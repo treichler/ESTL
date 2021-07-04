@@ -174,15 +174,15 @@ error_code_t Parameter_LoadDefaultData(void);
  * Parameter module's local data structure, containing static variables.
  */
 struct {
-  int32_t  access_level;
-  uint32_t access_secret;
-  uint32_t sys_table_crc;
-  uint32_t app_table_crc;
-} Parameter_Data = {
-    .access_level   = 0,
-    .access_secret  = 0,
-};
+  error_code_t  init_error;     //!<  Parameter initialization error code
+  int8_t        access_level;   //!<  Currently activated parameter access level
+  uint32_t      access_secret;  //!<  Current access level's secret key
+  uint32_t      table_crc;      //!<  Checksum over the whole parameter table
+} Parameter_Data;
 
+/**
+ * Array containing parameter table access secret keys
+ */
 const uint32_t access_secrets[] = {USER_ACCESS_SECRET, SERVICE_ACCESS_SECRET, PRODUCTION_ACCESS_SECRET, DEVELOPER_ACCESS_SECRET};
 
 #define NR_OF_ACCESS_SECRETS    (sizeof(access_secrets)/sizeof(uint32_t))
@@ -275,10 +275,12 @@ error_code_t Parameter_SysInfoFunction(parameter_function_t parameter_function, 
 /**
  * Help text for Parameter_SysCmdFunction()
  */
-#define SYSTEM_CMD_HELP_STR     ("System commands:\n"        \
-                                 "1: Save parameter\n"       \
-                                 "2: Initialize parameter\n" \
-                                 "3: Load default parameter")
+#define SYSTEM_CMD_HELP_STR     ("Value shows parameter table CRC\n" \
+                                 "System commands:\n"                \
+                                 "1: Save parameter\n"               \
+                                 "2: Initialize parameter\n"         \
+                                 "3: Load default parameter\n"       \
+                                 "4: Parameter init status")
 
 /**
  * This function is related to the system parameter "sys-cmd".
@@ -286,6 +288,8 @@ error_code_t Parameter_SysInfoFunction(parameter_function_t parameter_function, 
  *   - 1: Save current parameter set to non-volatile memory
  *   - 2: Initialize parameter, respectively load from non-volatile memory
  *   - 3: Load default/nominal parameter values. Requires at least production access level
+ *   - 4: Return error code of parameter initialization status
+ * On PARAMETER_READ the parameter table's checksum is returned via value.
  *
  * @param     parameter_function     How is this function called.
  * @param     value                  Pointer to related value in parameter array
@@ -295,10 +299,7 @@ error_code_t Parameter_SysInfoFunction(parameter_function_t parameter_function, 
 error_code_t Parameter_SysCmdFunction(parameter_function_t parameter_function, int32_t * value)
 {
   error_code_t error_code = OK;
-  if( parameter_function == PARAMETER_INIT )
-  {
-  }
-  else if( parameter_function == PARAMETER_WRITE )
+  if( parameter_function == PARAMETER_WRITE )
   {
     switch( *value )
     {
@@ -314,13 +315,16 @@ error_code_t Parameter_SysCmdFunction(parameter_function_t parameter_function, i
         else
           error_code = PARAMETER_ACCESS_DENIED;
         break;
+      case 4:
+        error_code = Parameter_Data.init_error;
+        break;
       default:
         break;
     }
-    *value = (int32_t)error_code;
   }
   else if( parameter_function == PARAMETER_READ )
   {
+    *value = Parameter_Data.table_crc;
   }
   return error_code;
 }
@@ -337,7 +341,7 @@ const parameter_table_entry_t System_Parameter_table[] = {
   //                           name         unit            representation       control flags         minimum     nominal         maximum                 function pointer   information/help
   [ESTL_PARAM_SYS_INFO]    = {"sys-info",   UNIT_NONE,            REPR_HEX,  LEVEL_0|R_O|NVMEM,      INT32_MIN, PAR_REV_NR,      INT32_MAX,      &Parameter_SysInfoFunction,  SERVICE_HELP_STR},
   [ESTL_PARAM_SYS_KEY]     = {"sys-key",    UNIT_NONE,            REPR_DEC,  LEVEL_0|R_W|NVMEM,      INT32_MIN,          0,      INT32_MAX,       &Parameter_SysKeyFunction,  "Parameter access key. The current value represents the access level."},
-  [ESTL_PARAM_SYS_CMD]     = {"sys-cmd",    UNIT_NONE,            REPR_DEC,  LEVEL_0|R_W,            INT32_MIN,          0,      INT32_MAX,       &Parameter_SysCmdFunction,  SYSTEM_CMD_HELP_STR},
+  [ESTL_PARAM_SYS_CMD]     = {"sys-cmd",    UNIT_NONE,            REPR_HEX,  LEVEL_0|R_W,            INT32_MIN,          0,      INT32_MAX,       &Parameter_SysCmdFunction,  SYSTEM_CMD_HELP_STR},
 #ifdef ESTL_ENABLE_RF
   // radio frequency
   [ESTL_PARAM_RF_FREQ]     = {"RF-freq",    UNIT_MEG_HERTZ,     REPR_Q15_4,  LEVEL_1|R_W|NVMEM,     Q15(863.0), Q15(868.0),     Q15(870.0),    &RfApp_FreqParameterFunction,  "Transmitter frequency."},
@@ -399,6 +403,12 @@ bool_t Parameter_IndexExists(int16_t parameter_index)
 {
   range_t index_range = Parameter_GetIndexRange();
   return ValueInRange( parameter_index, index_range );
+}
+
+
+inline uint32_t Parameter_GetTableCrc(void)
+{
+  return Parameter_Data.table_crc;
 }
 
 
@@ -666,11 +676,8 @@ error_code_t Parameter_LoadNvData(void)
     Parameter_GetEntry(&parameter_table_entry, i);
 
     // calculate parameter table CRC for identification
-    Parameter_Data.sys_table_crc = Parameter_Data.app_table_crc = 0xFFFFFFFF;
-    if( i < 0 )
-      Parameter_Data.sys_table_crc = Parameter_TableEntryCrc(parameter_table_entry, Parameter_Data.sys_table_crc);
-    else
-      Parameter_Data.app_table_crc = Parameter_TableEntryCrc(parameter_table_entry, Parameter_Data.app_table_crc);
+    Parameter_Data.table_crc = 0xFFFFFFFF;
+    Parameter_Data.table_crc = Parameter_TableEntryCrc(parameter_table_entry, Parameter_Data.table_crc);
 
     // check if parameter entry needs to be loaded with non-volatile memory data
     if( parameter_table_entry->flags & NVMEM )
@@ -770,15 +777,17 @@ error_code_t Parameter_LoadDefaultData(void)
 
 error_code_t Parameter_Init(void)
 {
-  error_code_t error;
+//  error_code_t error;
   // try to initialize parameters with non-volatile memory data
-  error = Parameter_LoadNvData();
-  if( (OK == error) || (PARAMETER_CONTENT_CHANGE == error) || (PARAMETER_REV_MINOR_CHANGE == error) )
-    return error;
+  Parameter_Data.init_error = Parameter_LoadNvData();
+  if( (OK == Parameter_Data.init_error) ||
+      (PARAMETER_CONTENT_CHANGE == Parameter_Data.init_error) ||
+      (PARAMETER_REV_MINOR_CHANGE == Parameter_Data.init_error) )
+    return Parameter_Data.init_error;
 
   // loading non-volatile memory failed so initialize parameters with default values
   Parameter_LoadDefaultData();
-  return error;
+  return Parameter_Data.init_error;
 }
 
 

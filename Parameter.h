@@ -27,14 +27,6 @@
  *
  * @license Released under the GNU Lesser General Public License
  *
- * @todo Parameter table identification:
- * If the parameter table could be identified by an external application,
- * previously fetched table content could be reused, this could save bandwidth
- * respectively execution time and increase user experience.
- * Parameter table identification could be established by checking the index
- * range and a checksum respectively hash-value which is previously calculated
- * over the parameter table.
- *
  * @todo Parameter name changed:
  * to check if a parameter's name changed due to a different firmware revision
  * there could be a checksum of the parameter name saved in the non-volatile
@@ -226,6 +218,14 @@ range_t Parameter_GetIndexRange(void);
  *   @retval  FALSE   Parameter index does not exist.
  */
 bool_t Parameter_IndexExists(int16_t parameter_index);
+
+
+/**
+ * Get the parameter table's checksum
+ *
+ * @return  Checksum over the whole parameter table
+ */
+uint32_t Parameter_GetTableCrc(void);
 
 
 /**
