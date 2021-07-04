@@ -61,6 +61,7 @@ typedef enum {
   FUNCTION_UNAVAILABLE,         //!<  Function is unavailable
   ADDRESS_NOT_ACCESSIBLE,       //!<  Desired address is not accessible
   TIMEOUT,                      //!<  A general timeout occurred
+  RESOURCE_BUSY,                //!<  The requested resource is currently busy
   BUFFER_TOO_SMALL,             //!<  Buffer is too small
 
   STORAGE_NOT_INITIALIZED,      //!<  Storage module is not initialized

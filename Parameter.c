@@ -35,6 +35,7 @@
 #include <string.h>
 #include "Error.h"
 #include "Unit.h"
+#include "Crc.h"
 #ifdef ESTL_ENABLE_STORAGE
   #include "Storage.h"
 #endif
@@ -175,6 +176,8 @@ error_code_t Parameter_LoadDefaultData(void);
 struct {
   int32_t  access_level;
   uint32_t access_secret;
+  uint32_t sys_table_crc;
+  uint32_t app_table_crc;
 } Parameter_Data = {
     .access_level   = 0,
     .access_secret  = 0,
@@ -567,23 +570,60 @@ error_code_t Parameter_ReadData(int16_t parameter_index, parameter_data_t * para
 //-------------------------------------------------------------------------------------------------
 
 #ifdef ESTL_ENABLE_STORAGE
+/**
+ * Define parameter entry for non-volatile storage
+ */
 typedef struct {
-  int32_t value;
-  int16_t index;
-  int16_t place_holder;
+  int32_t  value;       //!<  Parameter's non-volatile value
+  int16_t  index;       //!<  Value's related parameter table index
+  uint16_t crc;         //!<  Integrity of non-volatile entry relative to parameter table entry
 } nv_parameter_entry_t;
+#endif
+
 
 /**
- * Define the parameter image
+ * Calculate checksum of parameter table entry.
+ * The CRC is built over name, unit, representation, and help respectively
+ * minimal, maximal and nominal value.
+ * This checksum could be used to identify the parameter table's entries
+ * by an external application.
+ *
+ * @param[in]  parameter_table_entry  Pointer to parameter table entry structure
+ * @param[in]  previous_crc           Previously calculated CRC
+ * @return                            The calculated CRC
  */
-typedef struct
+uint32_t Parameter_TableEntryCrc(const parameter_table_entry_t * parameter_table_entry, uint32_t previous_crc)
 {
-  uint16_t      number_of_entries;
-//  nv_parameter_entry_t parameter[SYSTEM_PARAMETER_TABLE_NR_OF_ENTRIES + NR_OF_PARAMETER_TABLE_ENTRIES];
-  int16_t       indices[SYSTEM_PARAMETER_TABLE_NR_OF_ENTRIES + NR_OF_PARAMETER_TABLE_ENTRIES];
-  int32_t       values[SYSTEM_PARAMETER_TABLE_NR_OF_ENTRIES + NR_OF_PARAMETER_TABLE_ENTRIES];
-} nvmem_t;
-#endif
+  uint32_t crc;
+  crc = Crc_Crc32( (const uint8_t*)parameter_table_entry->name,     strlen(parameter_table_entry->name),    previous_crc );
+  crc = Crc_Crc32( (const uint8_t*)&parameter_table_entry->unit,    sizeof(parameter_table_entry->unit),    crc );
+  crc = Crc_Crc32( (const uint8_t*)&parameter_table_entry->repr,    sizeof(parameter_table_entry->repr),    crc );
+  crc = Crc_Crc32( (const uint8_t*)&parameter_table_entry->minimum, sizeof(parameter_table_entry->minimum), crc );
+  crc = Crc_Crc32( (const uint8_t*)&parameter_table_entry->nominal, sizeof(parameter_table_entry->nominal), crc );
+  crc = Crc_Crc32( (const uint8_t*)&parameter_table_entry->maximum, sizeof(parameter_table_entry->maximum), crc );
+  crc = Crc_Crc32( (const uint8_t*)parameter_table_entry->help,     strlen(parameter_table_entry->help),    crc );
+  return crc;
+}
+
+
+/**
+ * Calculate checksum of parameter table entry for non-volatile entry.
+ * The CRC is built over name, unit and representation, so it holds all
+ * relevant information for an integrity check between non-volatile
+ * entry and related parameter table entry
+ *
+ * @param[in]  parameter_table_entry  Pointer to parameter table entry structure
+ * @param[in]  previous_crc           Previously calculated CRC
+ * @return                            The calculated CRC
+ */
+uint16_t Parameter_NvEntryCrc(const parameter_table_entry_t * parameter_table_entry)
+{
+  uint16_t crc;
+  crc = Crc_Crc16( (const uint8_t*)parameter_table_entry->name,  strlen(parameter_table_entry->name), 0x0000 );
+  crc = Crc_Crc16( (const uint8_t*)&parameter_table_entry->unit, sizeof(parameter_table_entry->unit), crc );
+  crc = Crc_Crc16( (const uint8_t*)&parameter_table_entry->repr, sizeof(parameter_table_entry->repr), crc );
+  return crc;
+}
 
 
 /**
@@ -606,66 +646,53 @@ typedef struct
 error_code_t Parameter_LoadNvData(void)
 {
 #ifdef ESTL_ENABLE_STORAGE
+  nv_parameter_entry_t nv_parameter_entry[SYSTEM_PARAMETER_TABLE_NR_OF_ENTRIES + NR_OF_PARAMETER_TABLE_ENTRIES];
   const parameter_table_entry_t * parameter_table_entry = 0;
-  int32_t value, storage_size;
-  int16_t i, nvmem_index = 0;
-  error_code_t init_status;
+  int32_t value, storage_size, number_of_nv_entries;
+  int16_t i;
+  uint16_t nvmem_index = 0;
+  error_code_t init_status = OK;
   uint8_t content_changed = 0;
-  nvmem_t nvmem;
 
-  // TODO improve parameter reading to increase compatibility
-  //      in case of parameter table changes.
   // load and check data from non volatile memory
-  storage_size = Storage_Read(STORAGE_PARAMETER_IMAGE, (uint8_t*)(&nvmem), sizeof(nvmem));
+  storage_size = Storage_Read(STORAGE_PARAMETER_IMAGE, (uint8_t*)(nv_parameter_entry), sizeof(nv_parameter_entry));
   if( storage_size < 0 )
-  {
-//    Parameter_data.init_status = init_status;
     return (error_code_t)storage_size;
-  }
-  if( storage_size != sizeof(nvmem) )
-    return UNKNOWN_ERROR;
+  number_of_nv_entries = storage_size / sizeof(nv_parameter_entry_t);
 
-/*
-  // count number of non volatile parameter table entries
-  int16_t nvmem_nr_of_entries;
+  // copy values to parameter array
   for( i = -(int16_t)SYSTEM_PARAMETER_TABLE_NR_OF_ENTRIES; i < NR_OF_PARAMETER_TABLE_ENTRIES; i++ )
   {
     Parameter_GetEntry(&parameter_table_entry, i);
-    if (parameter_table_entry->flags & NVMEM)
-      nvmem_nr_of_entries ++;
-  }
 
-  // check if number of non volatile parameter table entries match with nv-memory
-  // TODO allow linear growth of parameter table
-  if (nvmem.number_of_entries != nvmem_nr_of_entries)
-  {
-//    Parameter_data.init_status = PARAMETER_ENTRIES_MISMATCH;
-    return PARAMETER_ENTRIES_MISMATCH;
-  }
-*/
+    // calculate parameter table CRC for identification
+    Parameter_Data.sys_table_crc = Parameter_Data.app_table_crc = 0xFFFFFFFF;
+    if( i < 0 )
+      Parameter_Data.sys_table_crc = Parameter_TableEntryCrc(parameter_table_entry, Parameter_Data.sys_table_crc);
+    else
+      Parameter_Data.app_table_crc = Parameter_TableEntryCrc(parameter_table_entry, Parameter_Data.app_table_crc);
 
-  // copy values to parameter array
-  for (i = -(int16_t)SYSTEM_PARAMETER_TABLE_NR_OF_ENTRIES; i < NR_OF_PARAMETER_TABLE_ENTRIES; i++)
-  {
-    Parameter_GetEntry(&parameter_table_entry, i);
     // check if parameter entry needs to be loaded with non-volatile memory data
-    if( (parameter_table_entry->flags & NVMEM) && (i >= nvmem.indices[nvmem_index]) )
+    if( parameter_table_entry->flags & NVMEM )
     {
       // increase nvmem_index just in case if there is non-volatile data from another minor parameter revision
-      while( (i > nvmem.indices[nvmem_index]) && (nvmem_index < nvmem.number_of_entries) )
+      while( (i > nv_parameter_entry[nvmem_index].index) && (nvmem_index < number_of_nv_entries) )
       {
         nvmem_index ++;
         content_changed = 1;
       }
 
-      if( (i == nvmem.indices[nvmem_index]) && (nvmem_index < nvmem.number_of_entries) )
+      if( (nv_parameter_entry[nvmem_index].index == i) && (nvmem_index < number_of_nv_entries) &&
+          (nv_parameter_entry[nvmem_index].crc == Parameter_NvEntryCrc(parameter_table_entry)) )
       {
-        value = nvmem.values[nvmem_index];
+        // non-volatile entry found, load its value
+        value = nv_parameter_entry[nvmem_index].value;
         // TODO eventually check value's limits, correct it or abort with error?
         nvmem_index ++;
       }
       else
       {
+        // non-volatile entry not found, load nominal value
         value = parameter_table_entry->nominal;
         content_changed = 1;
       }
@@ -758,11 +785,11 @@ error_code_t Parameter_Init(void)
 error_code_t Parameter_Save(void)
 {
 #ifdef ESTL_ENABLE_STORAGE
+  nv_parameter_entry_t nv_parameter_entry[SYSTEM_PARAMETER_TABLE_NR_OF_ENTRIES + NR_OF_PARAMETER_TABLE_ENTRIES];
   const parameter_table_entry_t * parameter_table_entry = 0;
   int16_t i;
   uint16_t nvmem_index = 0;
   error_code_t error;
-  nvmem_t nvmem;
 
   for( i = -(int16_t)SYSTEM_PARAMETER_TABLE_NR_OF_ENTRIES; i < NR_OF_PARAMETER_TABLE_ENTRIES; i++ )
   {
@@ -770,24 +797,17 @@ error_code_t Parameter_Save(void)
     if( OK != error )
       return error;
     // copy data from parameter table to nv-memory structure
-    if (parameter_table_entry->flags & NVMEM)
+    if( parameter_table_entry->flags & NVMEM )
     {
       if( parameter_table_entry->parameterFunction )
         parameter_table_entry->parameterFunction( PARAMETER_SAVE, &(Parameter_array[SYSTEM_PARAMETER_TABLE_NR_OF_ENTRIES + i]) );
-      nvmem.values[nvmem_index] = Parameter_array[SYSTEM_PARAMETER_TABLE_NR_OF_ENTRIES + i];
-      nvmem.indices[nvmem_index] = i;
+      nv_parameter_entry[nvmem_index].value = Parameter_array[SYSTEM_PARAMETER_TABLE_NR_OF_ENTRIES + i];
+      nv_parameter_entry[nvmem_index].index = i;
+      nv_parameter_entry[nvmem_index].crc   = Parameter_NvEntryCrc( parameter_table_entry );
       nvmem_index ++;
     }
   }
-  nvmem.number_of_entries = nvmem_index;
-  // fill remaining image entries
-  while( nvmem_index < (SYSTEM_PARAMETER_TABLE_NR_OF_ENTRIES + NR_OF_PARAMETER_TABLE_ENTRIES) )
-  {
-    nvmem.values[nvmem_index] = 0;
-    nvmem.indices[nvmem_index] = INT16_MIN;
-    nvmem_index ++;
-  }
-  return Storage_Write(STORAGE_PARAMETER_IMAGE, (uint8_t*)(&nvmem), sizeof(nvmem));
+  return Storage_Write( STORAGE_PARAMETER_IMAGE, (uint8_t*)nv_parameter_entry, nvmem_index * sizeof(nv_parameter_entry_t) );
 #else
   return OK;
 #endif

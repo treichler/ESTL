@@ -47,6 +47,7 @@ const char * Error_GetMessage(error_code_t error)
     [FUNCTION_UNAVAILABLE         - UNKNOWN_ERROR] = "Function unavailable",
     [ADDRESS_NOT_ACCESSIBLE       - UNKNOWN_ERROR] = "Address not accessible",
     [TIMEOUT                      - UNKNOWN_ERROR] = "Timeout",
+    [RESOURCE_BUSY                - UNKNOWN_ERROR] = "Resource busy",
     [BUFFER_TOO_SMALL             - UNKNOWN_ERROR] = "Buffer too small",
 
     [STORAGE_NOT_INITIALIZED      - UNKNOWN_ERROR] = "Storage not initialized",

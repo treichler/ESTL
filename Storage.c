@@ -33,7 +33,7 @@
 #include "ESTL_Types.h"
 #include <string.h>
 #include "Error.h"
-#include "Target.h"
+#include "Crc.h"
 #include "Storage.h"
 
 
@@ -56,7 +56,7 @@
 //-------------------------------------------------------------------------------------------------
 error_code_t Storage_NvMemRead(uint16_t addr, uint8_t *data, uint16_t size);
 error_code_t Storage_NvMemWrite(uint16_t addr, uint8_t *data, uint16_t size);
-error_code_t Storage_GetSize(void);
+int32_t Storage_GetSize(void);
 
 
 struct {
@@ -87,7 +87,7 @@ inline error_code_t Storage_NvMemWrite(uint16_t addr, uint8_t *data, uint16_t si
   return StorageI2cEeprom_NvMemWrite(addr, data, size);
 }
 
-inline error_code_t Storage_GetSize(void)
+inline int32_t Storage_GetSize(void)
 {
   return StorageI2cEeprom_GetSize();
 }
@@ -205,7 +205,7 @@ error_code_t Storage_Write(storage_id_t index, void *data, int16_t size)
     return STORAGE_DATA_TOO_BIG;
   header.index = index;
   header.size = size;
-  header.crc32 = Target_CalculateCrc32(data, size);
+  header.crc32 = Crc_Crc32(data, size, 0x00000000);
   write_status = Storage_NvMemWrite(Storage_table[index].addr, (uint8_t*)(&header), sizeof(header));
   if (OK != write_status)
     return write_status;
@@ -234,7 +234,7 @@ int32_t Storage_Read(storage_id_t index, void *data, int16_t size)
   read_status = Storage_NvMemRead(Storage_table[index].addr + sizeof(header), data, header.size);
   if( OK != read_status )
     return (int32_t)read_status;
-  if (header.crc32 != Target_CalculateCrc32(data, header.size))
+  if( header.crc32 != Crc_Crc32(data, header.size, 0x00000000) )
     return (int32_t)STORAGE_CRC_MISMATCH;
   return header.size;
 }
