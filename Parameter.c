@@ -608,6 +608,7 @@ uint32_t Parameter_TableEntryCrc(const parameter_table_entry_t * parameter_table
   crc = Crc_Crc32( (const uint8_t*)parameter_table_entry->name,     strlen(parameter_table_entry->name),    previous_crc );
   crc = Crc_Crc32( (const uint8_t*)&parameter_table_entry->unit,    sizeof(parameter_table_entry->unit),    crc );
   crc = Crc_Crc32( (const uint8_t*)&parameter_table_entry->repr,    sizeof(parameter_table_entry->repr),    crc );
+  crc = Crc_Crc32( (const uint8_t*)&parameter_table_entry->flags,   sizeof(parameter_table_entry->flags),   crc );
   crc = Crc_Crc32( (const uint8_t*)&parameter_table_entry->minimum, sizeof(parameter_table_entry->minimum), crc );
   crc = Crc_Crc32( (const uint8_t*)&parameter_table_entry->nominal, sizeof(parameter_table_entry->nominal), crc );
   crc = Crc_Crc32( (const uint8_t*)&parameter_table_entry->maximum, sizeof(parameter_table_entry->maximum), crc );
@@ -675,10 +676,6 @@ error_code_t Parameter_LoadNvData(void)
   {
     Parameter_GetEntry(&parameter_table_entry, i);
 
-    // calculate parameter table CRC for identification
-    Parameter_Data.table_crc = 0xFFFFFFFF;
-    Parameter_Data.table_crc = Parameter_TableEntryCrc(parameter_table_entry, Parameter_Data.table_crc);
-
     // check if parameter entry needs to be loaded with non-volatile memory data
     if( parameter_table_entry->flags & NVMEM )
     {
@@ -689,8 +686,7 @@ error_code_t Parameter_LoadNvData(void)
         content_changed = 1;
       }
 
-      if( (nv_parameter_entry[nvmem_index].index == i) && (nvmem_index < number_of_nv_entries) &&
-          (nv_parameter_entry[nvmem_index].crc == Parameter_NvEntryCrc(parameter_table_entry)) )
+      if( (nv_parameter_entry[nvmem_index].index == i) && (nvmem_index < number_of_nv_entries) )
       {
         // non-volatile entry found, load its value
         value = nv_parameter_entry[nvmem_index].value;
@@ -777,7 +773,17 @@ error_code_t Parameter_LoadDefaultData(void)
 
 error_code_t Parameter_Init(void)
 {
-//  error_code_t error;
+  int16_t i;
+  const parameter_table_entry_t * parameter_table_entry = 0;
+
+  // calculate parameter table CRC for identification
+  Parameter_Data.table_crc = 0xFFFFFFFF;
+  for( i = -(int16_t)SYSTEM_PARAMETER_TABLE_NR_OF_ENTRIES; i < NR_OF_PARAMETER_TABLE_ENTRIES; i++ )
+  {
+    Parameter_GetEntry(&parameter_table_entry, i);
+    Parameter_Data.table_crc = Parameter_TableEntryCrc(parameter_table_entry, Parameter_Data.table_crc);
+  }
+
   // try to initialize parameters with non-volatile memory data
   Parameter_Data.init_error = Parameter_LoadNvData();
   if( (OK == Parameter_Data.init_error) ||
