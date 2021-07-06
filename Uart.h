@@ -38,6 +38,20 @@
  * @brief UART Module
  *
  * This module implements a simple UART receive buffer.
+ * Every time the UART periphery receives a valid character the function
+ * Uart_ReceiveChar() has to be called. Below an example shows how this
+ * could be achieved with an interrupt service routine:
+ *
+ * @code
+ *   void USART1_IRQHandler(void)
+ *   {
+ *     NVIC_ClearPendingIRQ(USART1_IRQn);
+ *     // check if interrupt was caused by RXNE
+ *     if ((USART1->CR1 & USART_CR1_RXNEIE) && (USART1->SR & USART_SR_RXNE))
+ *       Uart_ReceiveChar((char)USART1->DR);
+ *   }
+ * @endcode
+ *
  * @{
  */
 
@@ -56,10 +70,10 @@ void Uart_ReceiveChar(char c);
  *
  * @param     rx_buffer                   Pointer to receive buffer's address
  * @return                                New line received?
- *   @retval  0                           No new line.
- *   @retval  1                           New line available in buffer.
+ *   @retval  FALSE                       No new line.
+ *   @retval  TRUE                        New line available in buffer.
  */
-int8_t Uart_NewLineReceived(char ** rx_buffer);
+bool_t Uart_NewLineReceived(char ** rx_buffer);
 
 
 /**

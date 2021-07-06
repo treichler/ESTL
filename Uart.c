@@ -73,13 +73,13 @@ void Uart_ReceiveChar(char c)
 }
 
 
-int8_t Uart_NewLineReceived(char ** rx_buffer)
+bool_t Uart_NewLineReceived(char ** rx_buffer)
 {
   *rx_buffer = Uart_data.receive_buffer;
   if (Uart_data.line_received)
   {
     Uart_data.line_received = 0;
-    return 1;
+    return TRUE;
   }
-  return 0;
+  return FALSE;
 }

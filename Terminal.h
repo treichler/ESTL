@@ -35,7 +35,7 @@
 
 /**
  * @ingroup ESTL
- * @defgroup TERMINAL  Terminal interface
+ * @defgroup TERMINAL  Terminal
  * @brief Terminal Module
  *
  * This module features a terminal-like user interface.
@@ -43,6 +43,45 @@
  * to any stream device like UART or USB.
  * Depending on ESTL configuration the terminal allows access to parameter,
  * scope and via CANopen connected device's remote parameter.
+ *
+ * The output respectively transmit function is similar to Print module's
+ * putc() function and looks something like:
+ *
+ * @code
+ *   void Target_UartSendChar(void * p, char c, int * cnt)
+ *   {
+ *     while((USART1->SR & USART_SR_TXE) == 0);
+ *     USART1->DR = c;
+ *   }
+ * @endcode
+ *
+ * An example for the input respectively receive function could be found in
+ * Uart.h namely Uart_NewLineReceived(). The function looks somehow like:
+ *
+ * @code
+ *   bool_t Uart_NewLineReceived(char ** rx_buffer)
+ *   {
+ *     *rx_buffer = Uart_data.receive_buffer;
+ *     if (Uart_data.line_received)
+ *     {
+ *       Uart_data.line_received = 0;
+ *       return TRUE;
+ *     }
+ *     return FALSE;
+ *   }
+ * @endcode
+ *
+ * Finally the terminal is initialized with the input and output functions
+ * provided within an array as it can be seen below:
+ *
+ * @code
+ *   const terminal_t terminals[] = {
+ *       { Target_UartSendChar, Uart_NewLineReceived }, // connect terminal to UART
+ *       { CDC_SendChar,        CDC_NewLineReceived },  // connect terminal to USB CDC
+ *   };
+ *   Terminal_Init( terminals, sizeof(terminals)/sizeof(terminal_t) );
+ * @endcode
+ *
  * @{
  */
 
@@ -53,7 +92,7 @@
  */
 typedef struct {
   putcf   transmitFunction;                   //!< Terminal's character transmit function
-  int8_t  (* const ReceivedNewLine)(char**);  //!< Terminal's line receive function
+  bool_t  (* const ReceivedNewLine)(char**);  //!< Terminal's line receive function
 } terminal_t;
 
 

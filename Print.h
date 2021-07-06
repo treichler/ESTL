@@ -65,7 +65,7 @@
  * many embedded systems.
  *
  * To use the printf() you need to supply your own character output function,
- * something like :
+ * something like:
  *
  * @code
  *   void putc( void *p, char c, int *cnt )
