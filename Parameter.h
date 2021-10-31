@@ -28,11 +28,27 @@
  * @license Released under the GNU Lesser General Public License
  *
  * @todo Parameter name changed:
- * to check if a parameter's name changed due to a different firmware revision
+ * To check if a parameter's name changed due to a different firmware revision
  * there could be a checksum of the parameter name saved in the non-volatile
  * memory next to the parameter and its index.
  * Since parameter uses 32 bits and index 16 bits it could be handy to use
- * a 16 bit checksum for the parameter name.
+ * a 16 bit or 8 bit checksum for the parameter name.
+ * Possible reasons for change:
+ *   - Same meaning different name --> stored value could be right
+ *   - Different meaning different name --> stored value is definitely wrong
+ * How could a minor change influence behavior in such a case?
+ *
+ * @todo Unit respectively Representation changed:
+ * Possible reasons for change:
+ *   - Unit changed
+ *     - Different meaning --> stored value could be wrong
+ *     - Different scaling --> stored value is definitely wrong
+ *     - unit_t enumeration changed --> compatibility totally broken
+ *   - Representation changed
+ *     - Probably same scaling (DEC, HEX) --> stored value could be right
+ *     - Different scaling (HEX, DEC vs. Q15) --> stored value is definitely wrong
+ *     - repr_t enumeration changed --> compatibility totally broken
+ * How could a minor change influence behavior in such a case?
  */
 
 #ifndef __PARAMETER_H__

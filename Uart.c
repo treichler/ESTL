@@ -29,6 +29,7 @@
  */
 
 #include "ESTL_Types.h"
+#include "Error.h"
 #include "Uart.h"
 #include "Target.h"
 #include "Parameter.h"

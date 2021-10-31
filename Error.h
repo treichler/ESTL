@@ -72,7 +72,7 @@ typedef enum {
   STORAGE_DATA_TOO_BIG,         //!<  Data does not fit into reserved non-volatile memory area
   STORAGE_NOT_ACCESSIBLE,       //!<  Data is not accessible
 
-  PARAMETER_NOT_INITIALIZED,    //!<  Parameter module is not initialized
+  PARAMETER_STORAGE_MISSING,    //!<  Parameter storage is missing
   PARAMETER_WRITE_PROTECTED,    //!<  Accessing write protected parameter value
   PARAMETER_ACCESS_DENIED,      //!<  Access is denied due to wrong access level
   PARAMETER_HIDDEN,             //!<  Parameter is hidden due to wrong access level

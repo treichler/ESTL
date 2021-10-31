@@ -38,10 +38,21 @@
  * @brief Cyclic redundancy check Module
  *
  * CRC provides functions for cyclic redundancy checks.
+ * There are algorithms available for 8, 16 and 32 bit CRCs.
  * The implementations are based on half-byte CRC tables which is a good
  * trade-off between code size and speed.
  * @{
  */
+
+
+/**
+ * Calculate CRC8 checksum
+ * @param[in]  data    Pointer to the data to calculate CRC
+ * @param[in]  length  Length of the provided data
+ * @param[in]  crc8    CRC initialization value respectively previously calculated CRC
+ * @return             Calculated checksum
+ */
+uint8_t Crc_Crc8(const uint8_t * data, size_t length, uint8_t crc8);
 
 
 /**

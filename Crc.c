@@ -32,6 +32,23 @@
 #include "Crc.h"
 
 
+// CRC-8/MAXIM (https://crccalc.com/)
+uint8_t Crc_Crc8(const uint8_t *data, size_t length, uint8_t previous_crc8)
+{
+  const uint8_t crc8_half_lookup[] = {
+      0x00, 0x9d, 0x23, 0xBE, 0x46, 0xDB, 0x65, 0xF8, 0x8C, 0x11, 0xAF, 0x32, 0xCA, 0x57, 0xE9, 0x74,
+  };
+  while( length -- )
+  {
+    previous_crc8 = (previous_crc8 >> 4) ^ crc8_half_lookup[ (previous_crc8 ^  *data      ) & 0x0F ];
+    previous_crc8 = (previous_crc8 >> 4) ^ crc8_half_lookup[ (previous_crc8 ^ (*data >> 4)) & 0x0F ];
+    data++;
+  }
+  return previous_crc8;
+}
+
+
+// CRC-16/ARC (https://crccalc.com/)
 uint16_t Crc_Crc16(const uint8_t * data, size_t length, uint16_t previous_crc16)
 {
   const uint16_t crc16_half_lookup[] = {
@@ -48,6 +65,7 @@ uint16_t Crc_Crc16(const uint8_t * data, size_t length, uint16_t previous_crc16)
 }
 
 
+// CRC-32 (https://crccalc.com/)
 uint32_t Crc_Crc32(const uint8_t * data, size_t length, uint32_t previous_crc32)
 {
   const uint32_t crc32_half_lookup[16] =

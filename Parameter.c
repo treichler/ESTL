@@ -741,7 +741,7 @@ error_code_t Parameter_LoadNvData(void)
     return PARAMETER_CONTENT_CHANGE;
   return init_status;
 #else
-  return PARAMETER_NOT_INITIALIZED;
+  return PARAMETER_STORAGE_MISSING;
 #endif
 }
 

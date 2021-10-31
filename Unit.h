@@ -49,32 +49,35 @@ typedef enum {
   UNIT_NONE,
   UNIT_PERCENT,
   UNIT_DECIBEL,
-  UNIT_LUX,
+  UNIT_LUX,                     //!<  Illuminance
   UNIT_REL_HUMIDITY,
-  UNIT_CELSIUS,
+  UNIT_CELSIUS,                 //!<  Temperature
   UNIT_KELVIN,
+  UNIT_M_SECOND,                //!<  Time
   UNIT_SECOND,
-  UNIT_M_SECOND,
-  UNIT_HERTZ,
+  UNIT_HERTZ,                   //!<  Frequency
   UNIT_K_HERTZ,
   UNIT_MEG_HERTZ,
-  UNIT_BAUD,
-  UNIT_RPM,
-  UNIT_JOULE,
+  UNIT_BAUD,                    //!<  Data rate
+  UNIT_RPM,                     //!<  Rotational speed
+  UNIT_JOULE,                   //!<  Thermal energy
+  UNIT_WATT_SECOND,             //!<  Electrical energy
   UNIT_WATT_HOUR,
-  UNIT_KILO_WATT_HOUR,
+  UNIT_K_WATT_HOUR,
+  UNIT_M_WATT,                  //!<  Electrical power
   UNIT_WATT,
-  UNIT_M_WATT,
+  UNIT_K_WATT,
+  UNIT_M_AMPERE,                //!<  Current
   UNIT_AMPERE,
-  UNIT_M_AMPERE,
+  UNIT_AMPERE_PER_SECOND,       //!<  Current gradient
+  UNIT_M_VOLT,                  //!<  Voltage
   UNIT_VOLT,
-  UNIT_M_VOLT,
-  UNIT_K_METRE,
-  UNIT_METRE,
+  UNIT_U_METRE,                 //!<  Length/distance
   UNIT_M_METRE,
-  UNIT_U_METRE,
+  UNIT_METRE,
+  UNIT_K_METRE,
+  UNIT_M_METRE_PER_SECOND,      //!<  Speed
   UNIT_METRE_PER_SECOND,
-  UNIT_M_METRE_PER_SECOND,
   UNIT_K_METRE_PER_HOUR,
   NR_OF_UNITS
 } unit_t;

@@ -58,7 +58,7 @@ const char * Error_GetMessage(error_code_t error)
     [STORAGE_DATA_TOO_BIG         - UNKNOWN_ERROR] = "Storage data too big",
     [STORAGE_NOT_ACCESSIBLE       - UNKNOWN_ERROR] = "Storage not accessible",
 
-    [PARAMETER_NOT_INITIALIZED    - UNKNOWN_ERROR] = "Parameter not initialized",
+    [PARAMETER_STORAGE_MISSING    - UNKNOWN_ERROR] = "Parameter storage missing",
     [PARAMETER_WRITE_PROTECTED    - UNKNOWN_ERROR] = "Parameter write protected",
     [PARAMETER_ACCESS_DENIED      - UNKNOWN_ERROR] = "Parameter access denied",
     [PARAMETER_HIDDEN             - UNKNOWN_ERROR] = "Parameter is hidden",

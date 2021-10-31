@@ -145,11 +145,13 @@
 
 
 //-------------------------------------------------------------------------------------------------
-//  TODO to be checked if really necessary
-//  Parameter
+//  Parameter access keys
 //-------------------------------------------------------------------------------------------------
 
-//#define ESTL_ENABLE_PARAMETER
+#define USER_ACCESS_SECRET              (1)
+#define SERVICE_ACCESS_SECRET           (2)
+#define PRODUCTION_ACCESS_SECRET        (3)
+#define DEVELOPER_ACCESS_SECRET         (4)
 
 
 //-------------------------------------------------------------------------------------------------
