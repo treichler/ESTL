@@ -39,11 +39,12 @@
 #include "Scope.h"
 #include "Terminal.h"
 
-
-#if( defined(ESTL_ENABLE_TERMINAL_CANOPEN_PARAMETER) )
-#include "Target.h"  // XXX needed by CANopen.h due to CAN_MSG_OBJ_t type
-#include "CANopen.h"
+// ESTL_ENABLE_TERMINAL_REMOTE_PARAMETER
+#if( defined(ESTL_ENABLE_TERMINAL_REMOTE_PARAMETER) )
+//#include "Target.h"  // XXX needed by CANopen.h due to CAN_MSG_OBJ_t type
+//#include "CANopen.h"
 #include "Parameter_CANopen.h"
+#include "ScopePdo.h"
 #endif
 
 
@@ -52,12 +53,17 @@
  */
 struct {
   const terminal_t * terminals;
-  uint8_t number_of_terminals;
-#if( defined(ESTL_ENABLE_TERMINAL_CANOPEN_PARAMETER) )
-  uint8_t can_open_buffer[ESTL_TERMINAL_PARAMETER_CANOPEN_BUFFER_SIZE];
-  uint8_t can_open_node_id;
+#if( defined(ESTL_ENABLE_TERMINAL_REMOTE_PARAMETER) )
+  uint8_t can_open_buffer[ESTL_TERMINAL_REMOTE_PARAMETER_BUFFER_SIZE]; // this buffer needs to be aligned to 32-bit address
+  uint32_t table_crc;
   range_t can_open_index_range;
+  uint8_t node_id;
+//  bool_t  is_local;
+  bool_t  is_remote;
 #endif
+  uint8_t number_of_terminals;
+  uint16_t last_daq_index;
+//  uint16_t last_scope_pdo_index;
 } Terminal_Data;
 
 
@@ -67,8 +73,8 @@ struct {
 
 void Terminal_PrintParameterDetails( const terminal_t * terminal, parameter_data_t * parameter_data, int32_t value, const char * info );
 void Terminal_ParameterNotFoundMessage( const terminal_t * terminal, char *rx_buffer );
-void Terminal_ReadErrorMessage( const terminal_t * terminal, error_code_t error );
-#if( defined(ESTL_ENABLE_TERMINAL_CANOPEN_PARAMETER) )
+void Terminal_PrintErrorMessage( const terminal_t * terminal, error_code_t error );
+#if( defined(ESTL_ENABLE_TERMINAL_REMOTE_PARAMETER) )
 error_code_t Terminal_InitCanOpenTable( uint8_t node_id );
 int16_t Terminal_CanOpenFindIndexByName( char * parameter_name );
 #endif
@@ -102,11 +108,54 @@ void Terminal_printf(const terminal_t * terminal_data, const char *fmt, ...)
 void Terminal_Task(void)
 {
   uint16_t terminal_index;
+
+  // iterate connected terminals
   for( terminal_index = 0; terminal_index < Terminal_Data.number_of_terminals; terminal_index ++ )
   {
     const terminal_t * terminal = &(Terminal_Data.terminals[terminal_index]);
 //    char * rx_buffer;
     char *rx_buffer, *argument;
+
+#if( defined(ESTL_ENABLE_SCOPE) && defined(ESTL_ENABLE_DEBUG) )
+    // check if DAQ to be printed
+    if( Scope_IsDaqMode() )
+    {
+      // print DAQ
+      scope_sample_t * daq_sample;
+      uint16_t daq_index, i;
+      daq_index = Scope_ReadDaqSample( &daq_sample );
+      if( Terminal_Data.last_daq_index != daq_index )
+      {
+        Terminal_Data.last_daq_index = daq_index;
+        Terminal_printf( terminal, "0x%04X", daq_index );
+        for(i = 0; i < ESTL_DEBUG_NR_OF_ENTRIES; i ++)
+        {
+          Terminal_printf( terminal, "\t%d", daq_sample->channel[i] );
+        }
+        Terminal_printf( terminal, "\r\n" );
+      }
+    }
+#endif
+
+#if( defined(ESTL_ENABLE_TERMINAL_REMOTE_PARAMETER) )
+    // check if remote DAQ to be printed
+    if( ScopePdo_HasNewSample() )
+    {
+      uint16_t i;
+      scope_pdo_sample_t * sample = ScopePdo_GetNewSample();
+      ScopePdo_ClearNewSampleFlag();
+
+      Terminal_printf( terminal, "0x%02X\t0x%04X", sample->node_id, sample->index );
+      for(i = 0; (i < ScopePdo_GetNrOfChannels()) && (i < SCOPE_PDO_MAX_NR_OF_CHANNELS); i ++)
+      {
+        if( (1 << i) & sample->validity_bits )
+          Terminal_printf( terminal, "\t%d", sample->sample[i] );
+        else
+          Terminal_printf( terminal, "\tnan" );
+      }
+      Terminal_printf( terminal, "\r\n" );
+    }
+#endif
 
     // check if new data is available
     if( terminal->ReceivedNewLine( &rx_buffer ) )
@@ -127,39 +176,46 @@ void Terminal_Task(void)
       }
 //      Terminal_printf(terminal, "command: %s\targument: %s\r\n", rx_buffer, argument);
 
-#if( defined(ESTL_ENABLE_TERMINAL_CANOPEN_PARAMETER) )
+#if( defined(ESTL_ENABLE_TERMINAL_REMOTE_PARAMETER) )
       // check if we received 'CANopen-ID'
       if( 0 == strcmp(rx_buffer, "CANopen-ID") )
       {
-        int32_t value;
         error_code_t error_code;
         if( *argument == '\0' )
-          Terminal_printf(terminal, "0x%02X\r\n", Terminal_Data.can_open_node_id);
+        {
+          if( Terminal_Data.is_remote )
+            Terminal_printf(terminal, "0x%02X\r\n", Terminal_Data.node_id);
+          else
+            Terminal_printf(terminal, "off\r\n");
+        }
         else
         {
-          value = Parse_StrToValue(argument);
-          if( value == 0 )
+          if( 0 == strcmp(argument, "off") )
           {
-            Terminal_Data.can_open_node_id = 0;
+            Terminal_Data.is_remote = FALSE;
             Terminal_printf(terminal, "OK\r\n");
           }
-          else if( value <= 127 )
+          else
           {
+            uint8_t node_id = (uint8_t)Parse_StrToValue(argument);
             // try to fetch parameter table
-            error_code = Terminal_InitCanOpenTable( (uint8_t)value );
+            error_code = Terminal_InitCanOpenTable( node_id );
             if( OK != error_code )
             {
+              Terminal_Data.is_remote = FALSE;
 #ifdef ESTL_ENABLE_ERROR_MESSAGES
-              Terminal_printf(terminal, "Could not fetch parameter from node 0x%02X: %s (error %d)\r\n", value, Error_GetMessage(error_code), error_code);
+              Terminal_printf(terminal, "Could not fetch parameter from node 0x%02X: %s (error %d)\r\n", node_id, Error_GetMessage(error_code), error_code);
 #else
               Terminal_printf(terminal, "Could not fetch parameter from node %0x%02X (error %d)\r\n", value, error_code);
 #endif
             }
             else
+            {
+              Terminal_Data.node_id = node_id;
+              Terminal_Data.is_remote = TRUE;
               Terminal_printf(terminal, "OK\r\n");
+            }
           }
-          else
-            Terminal_ReadErrorMessage(terminal, ABOVE_LIMIT);
         }
         return;
       } // we received 'CANopen-ID'
@@ -167,6 +223,7 @@ void Terminal_Task(void)
       // check if we received 'CANopen-scan'
       if( 0 == strcmp(rx_buffer, "CANopen-scan") )
       {
+/*
         uint8_t i;
         char node_seg_buffer[32];
         Terminal_printf(terminal, "Scanning 127 CANopen nodes...\r\n");
@@ -188,8 +245,9 @@ void Terminal_Task(void)
         }
         Terminal_printf(terminal, "...done.\r\n");
         return;
+*/
       } // we received 'CANopen-scan'
-#endif // ESTL_ENABLE_TERMINAL_CANOPEN_PARAMETER
+#endif // ESTL_ENABLE_TERMINAL_REMOTE_PARAMETER
 
       // check if we received 'help'
       if( 0 == strcmp(rx_buffer, "help") )
@@ -198,15 +256,26 @@ void Terminal_Task(void)
         {
           int16_t i;
           range_t index_range;
-#if( defined(ESTL_ENABLE_TERMINAL_CANOPEN_PARAMETER) )
+#if( defined(ESTL_ENABLE_TERMINAL_REMOTE_PARAMETER) )
           Terminal_printf(terminal, "CANopen-scan: Scan CANopen network for available nodes\r\n");
           Terminal_printf(terminal, "CANopen-ID:   Connect to ID's parameter interface\r\n");
 #endif
 #if( defined(ESTL_ENABLE_SCOPE) && defined(ESTL_ENABLE_DEBUG) )
           Terminal_printf(terminal, "scope: print scope's buffer content\r\n");
 #endif
-#if( defined(ESTL_ENABLE_TERMINAL_CANOPEN_PARAMETER) )
-          if( 0 == Terminal_Data.can_open_node_id )
+#if( defined(ESTL_ENABLE_TERMINAL_REMOTE_PARAMETER) )
+          if( Terminal_Data.is_remote )
+          {
+            Terminal_printf(terminal, "CANopen node 0x%02X parameters -- type 'help <parameter>' to get detailed information\r\n", Terminal_Data.node_id);
+            parameter_data_t * parameter_data = (parameter_data_t*)Terminal_Data.can_open_buffer;
+            for( i = Terminal_Data.can_open_index_range.min; i <= Terminal_Data.can_open_index_range.max; i ++ )
+            {
+              // TODO print parameter according to access level and visibility
+              printf( "%s\r\n", parameter_data->name );
+              parameter_data ++;
+            }
+          }
+          else
           {
 #endif
             Terminal_printf(terminal, "Built in parameters -- type 'help <parameter>' to get detailed information\r\n");
@@ -217,18 +286,7 @@ void Terminal_Task(void)
               if( OK == Parameter_ReadData(i, &parameter_data) )
                 Terminal_printf(terminal, "%s\r\n", parameter_data.name);
             }
-#if( defined(ESTL_ENABLE_TERMINAL_CANOPEN_PARAMETER) )
-          }
-          else
-          {
-            Terminal_printf(terminal, "CANopen node 0x%02X parameters -- type 'help <parameter>' to get detailed information\r\n", Terminal_Data.can_open_node_id);
-            parameter_data_t * parameter_data = (parameter_data_t*)Terminal_Data.can_open_buffer;
-            for( i = Terminal_Data.can_open_index_range.min; i <= Terminal_Data.can_open_index_range.max; i ++ )
-            {
-              // TODO print parameter according to access level and visibility
-              printf( "%s\r\n", parameter_data->name );
-              parameter_data ++;
-            }
+#if( defined(ESTL_ENABLE_TERMINAL_REMOTE_PARAMETER) )
           }
 #endif
         }
@@ -238,26 +296,8 @@ void Terminal_Task(void)
           parameter_data_t parameter_data;
           error_code_t parameter_read_status;
 
-#if( defined(ESTL_ENABLE_TERMINAL_CANOPEN_PARAMETER) )
-          if( 0 == Terminal_Data.can_open_node_id )
-          {
-#endif
-            // try to find argument in local parameter list
-            parameter_index = Parameter_FindIndexByName(argument);
-            if( ! Parameter_IndexExists(parameter_index) )
-              Terminal_ParameterNotFoundMessage(terminal, argument);
-            else
-            {
-              parameter_read_status = Parameter_ReadData(parameter_index, &parameter_data);
-              if( parameter_read_status != OK )
-                Terminal_ReadErrorMessage(terminal, parameter_read_status);
-              else
-                Terminal_PrintParameterDetails( terminal, &parameter_data, Parameter_GetValue(parameter_index), Parameter_GetHelp(parameter_index) );
-              Terminal_printf(terminal, "\r\n");
-            }
-#if( defined(ESTL_ENABLE_TERMINAL_CANOPEN_PARAMETER) )
-          }
-          else
+#if( defined(ESTL_ENABLE_TERMINAL_REMOTE_PARAMETER) )
+          if( Terminal_Data.is_remote )
           {
             // try to find argument in CANopen parameter list
             parameter_index = Terminal_CanOpenFindIndexByName( argument );
@@ -273,17 +313,35 @@ void Terminal_Task(void)
               error_code_t error_code;
               int32_t value;
               parameter_data_t * parameter_data = &((parameter_data_t*)Terminal_Data.can_open_buffer)[parameter_index - Terminal_Data.can_open_index_range.min];
-              error_code = Parameter_CANopen_ReadInfo( Terminal_Data.can_open_node_id, parameter_index, info, sizeof(info) );
+              error_code = Parameter_CANopen_ReadInfo( Terminal_Data.node_id, parameter_index, info, sizeof(info) );
               if( OK != error_code )
-                Terminal_ReadErrorMessage(terminal, error_code);
-              error_code = Parameter_CANopen_ReadValue( Terminal_Data.can_open_node_id, parameter_index, &value );
+                Terminal_PrintErrorMessage(terminal, error_code);
+              error_code = Parameter_CANopen_ReadValue( Terminal_Data.node_id, parameter_index, &value );
               if( OK != error_code )
-                Terminal_ReadErrorMessage(terminal, error_code);
+                Terminal_PrintErrorMessage(terminal, error_code);
 
               // TODO print parameter according to access level and visibility and read-success
               Terminal_PrintParameterDetails( terminal, parameter_data, value, info );
               Terminal_printf(terminal, "\r\n");
             }
+          }
+          else
+          {
+#endif
+            // try to find argument in local parameter list
+            parameter_index = Parameter_FindIndexByName(argument);
+            if( ! Parameter_IndexExists(parameter_index) )
+              Terminal_ParameterNotFoundMessage(terminal, argument);
+            else
+            {
+              parameter_read_status = Parameter_ReadData(parameter_index, &parameter_data);
+              if( parameter_read_status != OK )
+                Terminal_PrintErrorMessage(terminal, parameter_read_status);
+              else
+                Terminal_PrintParameterDetails( terminal, &parameter_data, Parameter_GetValue(parameter_index), Parameter_GetHelp(parameter_index) );
+              Terminal_printf(terminal, "\r\n");
+            }
+#if( defined(ESTL_ENABLE_TERMINAL_REMOTE_PARAMETER) )
           }
 #endif
         }
@@ -300,13 +358,10 @@ void Terminal_Task(void)
         for( sample = 0; sample < ESTL_SCOPE_NR_OF_SAMPLES; sample ++ )
         {
           scope_sample = Scope_GetSample(sample);
+          Terminal_printf( terminal, "0x%04X", sample );
           for(i = 0; i < ESTL_DEBUG_NR_OF_ENTRIES; i ++)
           {
-            if( i > 0 )
-              Terminal_printf( terminal, "\t" );
-            Terminal_printf(terminal, "%d", scope_sample->channel[i] );
-//            Parameter_WriteValue(PARAM_D_INDEX, i);
-//            Parameter_ValueToString(PARAM_D_DATA, parameter_data.value, value_str);
+            Terminal_printf(terminal, "\t%d", scope_sample->channel[i] );
           }
           Terminal_printf( terminal, "\r\n" );
         }
@@ -315,19 +370,19 @@ void Terminal_Task(void)
       } // we received 'scope'
 #endif // ESTL_ENABLE_SCOPE && ESTL_ENABLE_DEBUG
 
-#if( defined(ESTL_ENABLE_TERMINAL_CANOPEN_PARAMETER) )
+#if( defined(ESTL_ENABLE_TERMINAL_REMOTE_PARAMETER) )
       range_t range;
-      if( 0 == Terminal_Data.can_open_node_id )
-      {
-        // find command in parameter list
-        parameter_index = Parameter_FindIndexByName( rx_buffer );
-        range = Parameter_GetIndexRange();
-      }
-      else
+      if( Terminal_Data.is_remote )
       {
         // find command in CANopen parameter list
         parameter_index = Terminal_CanOpenFindIndexByName( rx_buffer );
         range = Terminal_Data.can_open_index_range;
+      }
+      else
+      {
+        // find command in parameter list
+        parameter_index = Parameter_FindIndexByName( rx_buffer );
+        range = Parameter_GetIndexRange();
       }
       // check index range
       if( ! ValueInRange(parameter_index, range) )
@@ -347,22 +402,17 @@ void Terminal_Task(void)
           // write parameter
           int32_t value;
           value = Parse_StrToValue( argument );
-#if( defined(ESTL_ENABLE_TERMINAL_CANOPEN_PARAMETER) )
-          if( 0 == Terminal_Data.can_open_node_id )
-            parameter_access_status = Parameter_WriteValue( parameter_index, value );
+#if( defined(ESTL_ENABLE_TERMINAL_REMOTE_PARAMETER) )
+          if( Terminal_Data.is_remote )
+            parameter_access_status = Parameter_CANopen_WriteValue( Terminal_Data.node_id, parameter_index, value );
           else
-            parameter_access_status = Parameter_CANopen_WriteValue( Terminal_Data.can_open_node_id, parameter_index, value );
+            parameter_access_status = Parameter_WriteValue( parameter_index, value );
 #else
           parameter_access_status = Parameter_WriteValue( parameter_index, value );
 #endif
           // print error on write fail
           if( parameter_access_status != OK )
-#ifdef ESTL_ENABLE_ERROR_MESSAGES
-            Terminal_printf(terminal, "Could not write parameter: %s (error %d)\r\n",
-                Error_GetMessage(parameter_access_status), parameter_access_status);
-#else
-            Terminal_printf(terminal, "Could not write parameter (error %d)\r\n", parameter_access_status);
-#endif
+            Terminal_PrintErrorMessage(terminal, parameter_access_status);
           else
             Terminal_printf(terminal, "OK\r\n");
         }
@@ -372,16 +422,16 @@ void Terminal_Task(void)
           int32_t value;
           parameter_data_t parameter_data;
           parameter_data_t * parameter_data_ptr = &parameter_data;
-#if( defined(ESTL_ENABLE_TERMINAL_CANOPEN_PARAMETER) )
-          if( 0 == Terminal_Data.can_open_node_id )
+#if( defined(ESTL_ENABLE_TERMINAL_REMOTE_PARAMETER) )
+          if( Terminal_Data.is_remote )
           {
-            Parameter_ReadData(parameter_index, &parameter_data);
-            parameter_access_status = Parameter_ReadValue(parameter_index, &value);
+            parameter_data_ptr = &((parameter_data_t*)Terminal_Data.can_open_buffer)[parameter_index - Terminal_Data.can_open_index_range.min];
+            parameter_access_status = Parameter_CANopen_ReadValue( Terminal_Data.node_id, parameter_index, &value );
           }
           else
           {
-            parameter_data_ptr = &((parameter_data_t*)Terminal_Data.can_open_buffer)[parameter_index - Terminal_Data.can_open_index_range.min];
-            parameter_access_status = Parameter_CANopen_ReadValue( Terminal_Data.can_open_node_id, parameter_index, &value );
+            Parameter_ReadData(parameter_index, &parameter_data);
+            parameter_access_status = Parameter_ReadValue(parameter_index, &value);
           }
 #else
            Parameter_ReadData(parameter_index, &parameter_data);
@@ -389,7 +439,7 @@ void Terminal_Task(void)
 #endif
           // print error on write fail otherwise show value
           if( parameter_access_status != OK )
-            Terminal_ReadErrorMessage(terminal, parameter_access_status);
+            Terminal_PrintErrorMessage(terminal, parameter_access_status);
           else
           {
             char value_str[16];
@@ -398,8 +448,8 @@ void Terminal_Task(void)
           }
         }
       } // we received a valid parameter
+    } // new data was available
 
-    }
   }
 }
 
@@ -457,17 +507,17 @@ void Terminal_ParameterNotFoundMessage( const terminal_t * terminal, char *str )
  * @param     terminal         The terminal where the message has to be printed.
  * @param     error            The error code to be printed.
  */
-void Terminal_ReadErrorMessage( const terminal_t * terminal, error_code_t error )
+void Terminal_PrintErrorMessage( const terminal_t * terminal, error_code_t error )
 {
 #ifdef ESTL_ENABLE_ERROR_MESSAGES
-  Terminal_printf(terminal, "Could not read parameter: %s (error %d)\r\n", Error_GetMessage(error), error);
+  Terminal_printf(terminal, "ERR: %s (error %d)\r\n", Error_GetMessage(error), error);
 #else
-  Terminal_printf(terminal, "Could not read parameter (error %d)\r\n", error);
+  Terminal_printf(terminal, "ERR: (error %d)\r\n", error);
 #endif
 }
 
 
-#if( defined(ESTL_ENABLE_TERMINAL_CANOPEN_PARAMETER) )
+#if( defined(ESTL_ENABLE_TERMINAL_REMOTE_PARAMETER) )
 
 /**
  * Initialize the parameter table of a device which is connected via CANopen.
@@ -477,35 +527,37 @@ void Terminal_ReadErrorMessage( const terminal_t * terminal, error_code_t error 
  */
 error_code_t Terminal_InitCanOpenTable( uint8_t node_id )
 {
-  int32_t parameter_table_size, str_len, remaining_str_len;
+  int32_t parameter_table_size, str_len, remaining_str_len, i;
+  uint32_t table_crc;
   char * str;
   parameter_data_t * parameter_data;
-  int32_t i;
   error_code_t error;
-  Terminal_Data.can_open_node_id = node_id;
+
+  // get and check parameter table's CRC
+  error = Parameter_CANopen_ReadTableCrc(node_id, &table_crc);
+  if( OK != error )
+    return error;
+  if( Terminal_Data.table_crc == table_crc )
+    return OK;
+
+  // get parameter table index range
   error = Parameter_CANopen_ReadTableIndexRange(node_id, &Terminal_Data.can_open_index_range);
   if( OK != error )
-  {
-    Terminal_Data.can_open_node_id = 0;
     return error;
-  }
+
   parameter_table_size = (Terminal_Data.can_open_index_range.max - Terminal_Data.can_open_index_range.min + 1) * sizeof(parameter_data_t);
   if( parameter_table_size > sizeof(Terminal_Data.can_open_buffer) )
-  {
-    Terminal_Data.can_open_node_id = 0;
-    return UNKNOWN_ERROR;
-  }
+    return BUFFER_TOO_SMALL;
+
   // load parameter table
 //  Parameter_CANopen_Data.buffer = Terminal_Data.can_open_buffer;
   parameter_data = (parameter_data_t*)Terminal_Data.can_open_buffer;
   for( i = Terminal_Data.can_open_index_range.min; i <= Terminal_Data.can_open_index_range.max; i ++)
   {
-    error = Parameter_CANopen_ReadTableEntry( Terminal_Data.can_open_node_id, i, parameter_data );
+    error = Parameter_CANopen_ReadTableEntry( node_id, i, parameter_data );
     if( OK != error )
-    {
-      Terminal_Data.can_open_node_id = 0;
       return error;
-    }
+
     parameter_data ++;
   }
   // load parameter names
@@ -514,23 +566,20 @@ error_code_t Terminal_InitCanOpenTable( uint8_t node_id )
   parameter_data = (parameter_data_t*)Terminal_Data.can_open_buffer;
   for( i = Terminal_Data.can_open_index_range.min; i <= Terminal_Data.can_open_index_range.max; i ++)
   {
-    error = Parameter_CANopen_ReadName( Terminal_Data.can_open_node_id, i, str, remaining_str_len );
+    error = Parameter_CANopen_ReadName( node_id, i, str, remaining_str_len );
     if( OK != error )
-    {
-      Terminal_Data.can_open_node_id = 0;
       return error;
-    }
+
     parameter_data->name = str;
     str_len = strlen(str) + 1;
     str += str_len;
     if( remaining_str_len < str_len )
-    {
-      Terminal_Data.can_open_node_id = 0;
-      return UNKNOWN_ERROR;
-    }
+      return BUFFER_TOO_SMALL;
+
     remaining_str_len -= str_len;
     parameter_data ++;
   }
+  Terminal_Data.table_crc = table_crc;
   return OK;
 }
 
@@ -548,8 +597,6 @@ int16_t Terminal_CanOpenFindIndexByName( char * parameter_name )
 {
   int16_t i;
   parameter_data_t * parameter_data = (parameter_data_t*)Terminal_Data.can_open_buffer;
-  if( 0 == Terminal_Data.can_open_node_id )
-    return INT16_MIN;
   for( i = Terminal_Data.can_open_index_range.min; i <= Terminal_Data.can_open_index_range.max; i ++ )
   {
     if( 0 == strcmp(parameter_data->name, parameter_name) )

@@ -56,6 +56,7 @@ typedef enum {
   SCOPE_READY,          //!<  waiting for trigger
   SCOPE_TRIGGERED,      //!<  filling the post-trigger buffer
   SCOPE_COMPLETE,       //!<  scope completed
+  SCOPE_DAQ,            //!<  scope switched to data acquisition
 } scope_state_t;
 
 
@@ -65,12 +66,15 @@ typedef enum {
  */
 struct {
   scope_state_t  state;
+//  scope_state_t *daq;
   int8_t         trigger_channel;
   uint8_t        pre_trigger;
   uint16_t       pre_trigger_samples;
   uint16_t       post_trigger_samples;
   uint16_t       buffer_index;
   uint16_t       sample_div;
+  uint16_t       sample_div_counter;
+  uint16_t       daq_index;
   int32_t        trigger_level;
   scope_sample_t buffer[ESTL_SCOPE_NR_OF_SAMPLES];
 } Scope_data;
@@ -84,7 +88,7 @@ error_code_t Scope_CmdParameterFunction(parameter_function_t parameter_function,
   {
     if (*cmd < 0)
       return BELOW_LIMIT;
-    if (*cmd > 1)
+    if (*cmd > 2)
       return ABOVE_LIMIT;
 
     if( (SCOPE_COMPLETE == Scope_data.state) || (SCOPE_STOP == Scope_data.state) )
@@ -95,8 +99,12 @@ error_code_t Scope_CmdParameterFunction(parameter_function_t parameter_function,
         Scope_data.post_trigger_samples = ESTL_SCOPE_NR_OF_SAMPLES - Scope_data.pre_trigger_samples;
         Scope_data.state = SCOPE_ARMED;
       }
-//      else
-//        return SCOPE_NOT_ACCESSIBLE;
+      else if( *cmd == 2 )
+      {
+        Scope_data.daq_index = 0;
+        Scope_data.buffer_index = 0;
+        Scope_data.state = SCOPE_DAQ;
+      }
     }
     else
     {
@@ -131,17 +139,18 @@ error_code_t Scope_SetupParameterFunction(parameter_function_t parameter_functio
 
 void Scope_Task(void)
 {
-  static uint16_t sample_div = 0;
+//  static uint16_t sample_div = 0;
   uint8_t i;
 
   if( (SCOPE_STOP != Scope_data.state) && (SCOPE_COMPLETE != Scope_data.state) )
   {
-    // check sample divider
-    if( sample_div )
-      sample_div --;
+    // check sample divider counter
+    if( Scope_data.sample_div_counter )
+      Scope_data.sample_div_counter --;
     else
     {
-      sample_div = Scope_data.sample_div;
+      // reload sample divider counter
+      Scope_data.sample_div_counter = Scope_data.sample_div;
 
       // record the samples
       if( Scope_data.buffer_index >= ESTL_SCOPE_NR_OF_SAMPLES )
@@ -188,12 +197,20 @@ void Scope_Task(void)
           Scope_data.state = SCOPE_COMPLETE;
       }
 
-      // increment the buffer index
-      Scope_data.buffer_index ++;
+      if( SCOPE_DAQ == Scope_data.state )
+      {
+        // increment DAQ index
+        Scope_data.daq_index ++;
+      }
+      else
+      {
+        // increment the buffer index only if not in DAQ mode
+        Scope_data.buffer_index ++;
+      }
     }
   }
   else
-    sample_div = 0;
+    Scope_data.sample_div_counter = 0;
 }
 
 
@@ -207,6 +224,37 @@ scope_sample_t * Scope_GetSample(uint16_t index)
     index -= ESTL_SCOPE_NR_OF_SAMPLES;
 
   return &(Scope_data.buffer[index]);
+}
+
+
+inline bool_t Scope_IsComplete( void )
+{
+  return SCOPE_COMPLETE == Scope_data.state;
+}
+
+
+inline void Scope_SetStop( void )
+{
+  if( SCOPE_COMPLETE == Scope_data.state )
+    Scope_data.state = SCOPE_STOP;
+}
+
+
+inline bool_t Scope_IsDaqMode( void )
+{
+  return SCOPE_DAQ == Scope_data.state;
+}
+
+
+/**
+ * TODO Improve DAQ reading to avoid race conditions:
+ *      Currently the returned sample could be overwritten during
+ *      function call and further processing...
+ */
+uint16_t Scope_ReadDaqSample( scope_sample_t ** sample )
+{
+  *sample = &(Scope_data.buffer[Scope_data.buffer_index]);
+  return Scope_data.daq_index;
 }
 
 

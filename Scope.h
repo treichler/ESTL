@@ -109,6 +109,12 @@ void Scope_Task(void);
 scope_sample_t * Scope_GetSample(uint16_t index);
 
 
+bool_t Scope_IsComplete( void );
+void Scope_SetStop( void );
+bool_t Scope_IsDaqMode( void );
+uint16_t Scope_ReadDaqSample( scope_sample_t ** sample );
+
+
 /**
  * @} end of SCOPE
  */

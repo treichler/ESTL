@@ -54,7 +54,6 @@
   #define EEPROM_NR_OF_ADDR_BYTES         (1)
 #elif( ESTL_STORAGE_I2CEEPROM == ESTL_STORAGE_I2CEEPROM_24LC04 )
   // 24LC04 -- 512 byte
-  #error "EEprom needs to be tested. If successful this error can be deleted"
   #define EEPROM_SIZE                     (512)
   #define EEPROM_PAGE_SIZE                (16)
   #define EEPROM_NR_OF_ADDR_BYTES         (1)

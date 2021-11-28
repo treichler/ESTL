@@ -163,11 +163,12 @@
 
 
 //-------------------------------------------------------------------------------------------------
-//  Terminal CAN interface
+//  Terminal remote interface
 //-------------------------------------------------------------------------------------------------
 
-//#define ESTL_ENABLE_TERMINAL_CANOPEN_PARAMETER
-#define ESTL_TERMINAL_PARAMETER_CANOPEN_BUFFER_SIZE      (1024)
+//#define ESTL_ENABLE_TERMINAL_REMOTE_PARAMETER
+#define ESTL_TERMINAL_REMOTE_PARAMETER_CON_TIMEOUT      (100)   //!< Remote Parameter connection timeout [ms]
+#define ESTL_TERMINAL_REMOTE_PARAMETER_BUFFER_SIZE      (2048)  //!< Remote Parameter buffer size
 
 
 //-------------------------------------------------------------------------------------------------

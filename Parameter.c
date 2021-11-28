@@ -593,8 +593,10 @@ typedef struct {
 
 /**
  * Calculate checksum of parameter table entry.
- * The CRC is built over name, unit, representation, and help respectively
- * minimal, maximal and nominal value.
+ * The CRC is built over name, unit, representation, and flags respectively
+ * minimal, maximal and nominal value. The help text is kept out since a
+ * change on help should not have an impact on a parameter table entry's
+ * property.
  * This checksum could be used to identify the parameter table's entries
  * by an external application.
  *
@@ -612,7 +614,6 @@ uint32_t Parameter_TableEntryCrc(const parameter_table_entry_t * parameter_table
   crc = Crc_Crc32( (const uint8_t*)&parameter_table_entry->minimum, sizeof(parameter_table_entry->minimum), crc );
   crc = Crc_Crc32( (const uint8_t*)&parameter_table_entry->nominal, sizeof(parameter_table_entry->nominal), crc );
   crc = Crc_Crc32( (const uint8_t*)&parameter_table_entry->maximum, sizeof(parameter_table_entry->maximum), crc );
-  crc = Crc_Crc32( (const uint8_t*)parameter_table_entry->help,     strlen(parameter_table_entry->help),    crc );
   return crc;
 }
 
@@ -741,7 +742,7 @@ error_code_t Parameter_LoadNvData(void)
     return PARAMETER_CONTENT_CHANGE;
   return init_status;
 #else
-  return PARAMETER_STORAGE_MISSING;
+  return PARAMETER_NOT_INITIALIZED;
 #endif
 }
 
