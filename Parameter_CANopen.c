@@ -66,7 +66,7 @@ error_code_t Parameter_CANopen_ReadTableIndexRange( uint8_t node_id, range_t * p
 {
   int32_t temp;
 
-  Sdo_ExpRead_Foo( node_id, 0x2000, SUBIDX_PARAM_INDEX_RANGE, &temp, 0 );
+  Sdo_ExpRead( node_id, 0x2000, SUBIDX_PARAM_INDEX_RANGE, &temp, 0 );
   while( Sdo_ReqIsBusy() );
   if( ! Sdo_ReqIsFinished() )
     return CAN_SDO_CONNECTION_FAILED;
@@ -79,7 +79,7 @@ error_code_t Parameter_CANopen_ReadTableIndexRange( uint8_t node_id, range_t * p
 
 error_code_t Parameter_CANopen_ReadTableCrc( uint8_t node_id, uint32_t * crc )
 {
-  Sdo_ExpRead_Foo( node_id, 0x2000, SUBIDX_PARAM_TABLE_CRC, (int32_t*)crc, 0 );
+  Sdo_ExpRead( node_id, 0x2000, SUBIDX_PARAM_TABLE_CRC, (int32_t*)crc, 0 );
   while( Sdo_ReqIsBusy() );
   if( ! Sdo_ReqIsFinished() )
     return CAN_SDO_CONNECTION_FAILED;
@@ -92,7 +92,7 @@ error_code_t Parameter_CANopen_ReadName( uint8_t node_id, int16_t parameter_inde
   uint16_t index = 0x2000 + ((uint16_t)(parameter_index) >> 2);
   uint8_t sub_index = ((uint8_t)(parameter_index) << 6);
 
-  Sdo_SegRead_Foo( node_id, index, sub_index + SUBIDX_PARAM_NAME, name, len );
+  Sdo_SegRead( node_id, index, sub_index + SUBIDX_PARAM_NAME, name, len );
   while( Sdo_ReqIsBusy() );
   if( ! Sdo_ReqIsFinished() )
     return CAN_SDO_CONNECTION_FAILED;
@@ -107,7 +107,7 @@ error_code_t Parameter_CANopen_ReadInfo( uint8_t node_id, int16_t parameter_inde
 
   if( len <= 1 )
     return -1;
-  Sdo_SegRead_Foo( node_id, index, sub_index + SUBIDX_PARAM_INFO, info, len-1 );
+  Sdo_SegRead( node_id, index, sub_index + SUBIDX_PARAM_INFO, info, len-1 );
   while( Sdo_ReqIsBusy() );
   info[len-1] = '\0';
   if( ! Sdo_ReqIsFinished() )
@@ -121,7 +121,7 @@ error_code_t Parameter_CANopen_ReadValue( uint8_t node_id, int16_t parameter_ind
   uint16_t index = 0x2000 + ((uint16_t)(parameter_index) >> 2);
   uint8_t sub_index = ((uint8_t)(parameter_index) << 6);
 
-  Sdo_ExpRead_Foo( node_id, index, sub_index + SUBIDX_PARAM_ACTUAL, value, 0 );
+  Sdo_ExpRead( node_id, index, sub_index + SUBIDX_PARAM_ACTUAL, value, 0 );
   while( Sdo_ReqIsBusy() );
   if( ! Sdo_ReqIsFinished() )
     return CAN_SDO_CONNECTION_FAILED;
@@ -134,7 +134,7 @@ error_code_t Parameter_CANopen_WriteValue( uint8_t node_id, int16_t parameter_in
   uint16_t index = 0x2000 + ((uint16_t)(parameter_index) >> 2);
   uint8_t sub_index = ((uint8_t)(parameter_index) << 6);
 
-  Sdo_ExpWrite_Foo( node_id, index, sub_index + SUBIDX_PARAM_ACTUAL, value, 4 );
+  Sdo_ExpWrite( node_id, index, sub_index + SUBIDX_PARAM_ACTUAL, value, 4 );
   while( Sdo_ReqIsBusy() );
   if( ! Sdo_ReqIsFinished() )
   {
@@ -154,7 +154,7 @@ error_code_t Parameter_CANopen_ReadTableEntry( uint8_t node_id, int16_t paramete
   uint8_t sub_index = ((uint8_t)(parameter_index) << 6);
   int32_t temp;
 
-  Sdo_ExpRead_Foo( node_id, index, sub_index + SUBIDX_PARAM_PROPERTY, &temp, 0 );
+  Sdo_ExpRead( node_id, index, sub_index + SUBIDX_PARAM_PROPERTY, &temp, 0 );
   while( Sdo_ReqIsBusy() );
   if( ! Sdo_ReqIsFinished() )
     return CAN_SDO_CONNECTION_FAILED;
@@ -162,19 +162,19 @@ error_code_t Parameter_CANopen_ReadTableEntry( uint8_t node_id, int16_t paramete
   parameter_data->repr = (repr_t)(temp >> 16);
   parameter_data->unit = (unit_t)(temp >> 24);
 
-  Sdo_ExpRead_Foo( node_id, index, sub_index + SUBIDX_PARAM_NOMINAL, &temp, 0 );
+  Sdo_ExpRead( node_id, index, sub_index + SUBIDX_PARAM_NOMINAL, &temp, 0 );
   while( Sdo_ReqIsBusy() );
   if( ! Sdo_ReqIsFinished() )
     return CAN_SDO_CONNECTION_FAILED;
   parameter_data->nominal = (int32_t)temp;
 
-  Sdo_ExpRead_Foo( node_id, index, sub_index + SUBIDX_PARAM_MINIMUM, &temp, 0 );
+  Sdo_ExpRead( node_id, index, sub_index + SUBIDX_PARAM_MINIMUM, &temp, 0 );
   while( Sdo_ReqIsBusy() );
   if( ! Sdo_ReqIsFinished() )
     return CAN_SDO_CONNECTION_FAILED;
   parameter_data->minimum = (int32_t)temp;
 
-  Sdo_ExpRead_Foo( node_id, index, sub_index + SUBIDX_PARAM_MAXIMUM, &temp, 0 );
+  Sdo_ExpRead( node_id, index, sub_index + SUBIDX_PARAM_MAXIMUM, &temp, 0 );
   while( Sdo_ReqIsBusy() );
   if( ! Sdo_ReqIsFinished() )
     return CAN_SDO_CONNECTION_FAILED;

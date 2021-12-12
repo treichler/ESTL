@@ -64,6 +64,7 @@ struct {
   bool_t           (* SdoRequestFunction)(uint8_t);     //!<  SDO request function
   bool_t           (* SdoIsAvailableFunction)(void);    //!<  SDO request is busy function
   bool_t           is_initialized;
+  uint8_t          nr_of_nodes;
 } Sdo_data;
 
 
@@ -73,13 +74,14 @@ struct {
  * which consists of an 8-byte array. It is also expected that this particular
  * array is exclusively used for SDO requests only.
  */
-bool_t Sdo_Init( uint8_t * req_data, bool_t (* SdoRequestFunction)(uint8_t), bool_t (* SdoIsAvailableFunction)(void) )
+bool_t Sdo_Init( uint8_t * req_data, bool_t (* SdoRequestFunction)(uint8_t), bool_t (* SdoIsAvailableFunction)(void), uint8_t nr_of_nodes )
 {
   if( req_data && SdoRequestFunction && SdoIsAvailableFunction )
   {
     Sdo_data.req_data = req_data;
     Sdo_data.SdoRequestFunction = SdoRequestFunction;
     Sdo_data.SdoIsAvailableFunction = SdoIsAvailableFunction;
+    Sdo_data.nr_of_nodes = nr_of_nodes;
     Sdo_data.is_initialized = TRUE;
   }
   else
@@ -112,13 +114,25 @@ inline bool_t Sdo_ReqIsFinished( void )
 }
 
 
-inline uint32_t Sdo_GetAbortCode(void)
+inline uint32_t Sdo_GetAbortCode( void )
 {
   return Sdo_data.abort_code;
 }
 
 
-bool_t Sdo_ExpRead_Foo( uint8_t node_id, uint16_t index, uint8_t subindex, int32_t* data, uint8_t* valid_data_bytes )
+inline uint8_t Sdo_GetNrOfNodes( void )
+{
+  return Sdo_data.nr_of_nodes;
+}
+
+
+inline void Sdo_SetNrOfNodes( uint8_t nr_of_nodes )
+{
+  Sdo_data.nr_of_nodes = nr_of_nodes;
+}
+
+
+bool_t Sdo_ExpRead( uint8_t node_id, uint16_t index, uint8_t subindex, int32_t* data, uint8_t* valid_data_bytes )
 {
   if( Sdo_data.is_initialized && Sdo_data.SdoIsAvailableFunction() && \
       ((SDO_REQ_SUCCESS == Sdo_data.req_state) || (SDO_REQ_FAIL == Sdo_data.req_state)) )
@@ -144,7 +158,7 @@ bool_t Sdo_ExpRead_Foo( uint8_t node_id, uint16_t index, uint8_t subindex, int32
 }
 
 
-bool_t Sdo_ExpWrite_Foo( uint8_t node_id, uint16_t index, uint8_t subindex, int32_t data, uint8_t length )
+bool_t Sdo_ExpWrite( uint8_t node_id, uint16_t index, uint8_t subindex, int32_t data, uint8_t length )
 {
   if( Sdo_data.is_initialized && Sdo_data.SdoIsAvailableFunction() && \
       ((SDO_REQ_SUCCESS == Sdo_data.req_state) || (SDO_REQ_FAIL == Sdo_data.req_state)) )
@@ -173,7 +187,7 @@ bool_t Sdo_ExpWrite_Foo( uint8_t node_id, uint16_t index, uint8_t subindex, int3
 }
 
 
-bool_t Sdo_SegRead_Foo( uint8_t node_id, uint16_t index, uint8_t subindex, void* buff, uint32_t buff_size )
+bool_t Sdo_SegRead( uint8_t node_id, uint16_t index, uint8_t subindex, void* buff, uint32_t buff_size )
 {
   if( Sdo_data.is_initialized && Sdo_data.SdoIsAvailableFunction() && \
       ((SDO_REQ_SUCCESS == Sdo_data.req_state) || (SDO_REQ_FAIL == Sdo_data.req_state)) )

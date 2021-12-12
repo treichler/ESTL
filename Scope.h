@@ -41,6 +41,34 @@
  * @brief    Scope module
  *
  * This module extends the debug module with scope functionality.
+ * The Scope module needs to be initialized with a data print callback function.
+ * This function is called during data acquisition every time a new sample is
+ * ready, respectively during readout of scope's buffer.
+ * The data print function has to return a boolean value that indicates if data
+ * was successfully handled or not.
+ * A code example of how this function could look like is shown below:
+ *
+ * @code
+ *   static bool_t         scope_has_new_sample;
+ *   static scope_sample_t scope_sample;
+ *   static uint16_t       scope_sample_index
+ *
+ *   bool_t PrintScope( uint16_t index, scope_sample_t * scope_sample )
+ *   {
+ *     if( scope_has_new_sample )
+ *       return FALSE;  // print could not be handled since a previous request is pending
+ *     scope_sample         = scope_sample;
+ *     scope_sample_index   = index;
+ *     scope_has_new_sample = TRUE;
+ *     return TRUE;     // print function was called successfully
+ *   }
+ * @endcode
+ *
+ * Finally initialize scope with your print function:
+ *
+ * @code
+ *   Scope_Init( PrintScope );
+ * @endcode
  * @{
  */
 
@@ -56,6 +84,9 @@
 typedef struct _scope_sample_t_ {
   int32_t channel[ESTL_DEBUG_NR_OF_ENTRIES];
 } scope_sample_t;
+
+
+void Scope_Init( bool_t (* PrintFunction)(uint16_t, scope_sample_t*) );
 
 
 /**
@@ -85,7 +116,7 @@ error_code_t Scope_CmdParameterFunction(parameter_function_t parameter_function,
  * @param[in]  parameter_function  Context in which this function is called.
  * @param      param               Has no function.
  * @return                         Error code depending if command was successful.
- *   @retval   SCOPE_IS_RUNNING    Setting is prohibited as long as scope is running.
+ *   @retval   SCOPE_IS_BUSY       Setting is prohibited as long as scope is busy.
  *   @retval   OK                  In every other case.
  */
 error_code_t Scope_SetupParameterFunction(parameter_function_t parameter_function, int32_t * param);

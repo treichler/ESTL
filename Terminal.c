@@ -43,6 +43,7 @@
 #if( defined(ESTL_ENABLE_TERMINAL_REMOTE_PARAMETER) )
 //#include "Target.h"  // XXX needed by CANopen.h due to CAN_MSG_OBJ_t type
 //#include "CANopen.h"
+#include "Sdo.h"
 #include "Parameter_CANopen.h"
 #include "ScopePdo.h"
 #endif
@@ -58,12 +59,13 @@ struct {
   uint32_t table_crc;
   range_t can_open_index_range;
   uint8_t node_id;
-//  bool_t  is_local;
   bool_t  is_remote;
 #endif
+  bool_t  scope_has_new_sample;
   uint8_t number_of_terminals;
   uint16_t last_daq_index;
-//  uint16_t last_scope_pdo_index;
+  uint16_t scope_sample_index;
+  scope_sample_t * scope_sample;
 } Terminal_Data;
 
 
@@ -74,6 +76,7 @@ struct {
 void Terminal_PrintParameterDetails( const terminal_t * terminal, parameter_data_t * parameter_data, int32_t value, const char * info );
 void Terminal_ParameterNotFoundMessage( const terminal_t * terminal, char *rx_buffer );
 void Terminal_PrintErrorMessage( const terminal_t * terminal, error_code_t error );
+bool_t Terminal_PrintScope( uint16_t index, scope_sample_t * scope_sample );
 #if( defined(ESTL_ENABLE_TERMINAL_REMOTE_PARAMETER) )
 error_code_t Terminal_InitCanOpenTable( uint8_t node_id );
 int16_t Terminal_CanOpenFindIndexByName( char * parameter_name );
@@ -84,6 +87,11 @@ void Terminal_Init( const terminal_t * terminals, uint8_t number_of_terminals )
 {
   Terminal_Data.terminals = terminals;
   Terminal_Data.number_of_terminals = number_of_terminals;
+
+#if( defined(ESTL_ENABLE_SCOPE) && defined(ESTL_ENABLE_DEBUG) )
+  // connect scope data print function
+  Scope_Init( Terminal_PrintScope );
+#endif
 }
 
 
@@ -113,11 +121,22 @@ void Terminal_Task(void)
   for( terminal_index = 0; terminal_index < Terminal_Data.number_of_terminals; terminal_index ++ )
   {
     const terminal_t * terminal = &(Terminal_Data.terminals[terminal_index]);
-//    char * rx_buffer;
     char *rx_buffer, *argument;
 
 #if( defined(ESTL_ENABLE_SCOPE) && defined(ESTL_ENABLE_DEBUG) )
     // check if DAQ to be printed
+    if( Terminal_Data.scope_has_new_sample )
+    {
+      uint16_t i;
+      Terminal_printf( terminal, "0x%04X", Terminal_Data.scope_sample_index );
+      for( i = 0; i < ESTL_DEBUG_NR_OF_ENTRIES; i ++ )
+      {
+        Terminal_printf( terminal, "\t%d", Terminal_Data.scope_sample->channel[i] );
+      }
+      Terminal_printf( terminal, "\r\n" );
+      Terminal_Data.scope_has_new_sample = FALSE;
+    }
+/*
     if( Scope_IsDaqMode() )
     {
       // print DAQ
@@ -135,6 +154,7 @@ void Terminal_Task(void)
         Terminal_printf( terminal, "\r\n" );
       }
     }
+*/
 #endif
 
 #if( defined(ESTL_ENABLE_TERMINAL_REMOTE_PARAMETER) )
@@ -145,13 +165,13 @@ void Terminal_Task(void)
       scope_pdo_sample_t * sample = ScopePdo_GetNewSample();
       ScopePdo_ClearNewSampleFlag();
 
-      Terminal_printf( terminal, "0x%02X\t0x%04X", sample->node_id, sample->index );
+      Terminal_printf( terminal, "%3d\t%d", sample->node_id, sample->index );
       for(i = 0; (i < ScopePdo_GetNrOfChannels()) && (i < SCOPE_PDO_MAX_NR_OF_CHANNELS); i ++)
       {
         if( (1 << i) & sample->validity_bits )
           Terminal_printf( terminal, "\t%d", sample->sample[i] );
         else
-          Terminal_printf( terminal, "\tnan" );
+          Terminal_printf( terminal, "\t##" );
       }
       Terminal_printf( terminal, "\r\n" );
     }
@@ -177,20 +197,50 @@ void Terminal_Task(void)
 //      Terminal_printf(terminal, "command: %s\targument: %s\r\n", rx_buffer, argument);
 
 #if( defined(ESTL_ENABLE_TERMINAL_REMOTE_PARAMETER) )
-      // check if we received 'CANopen-ID'
-      if( 0 == strcmp(rx_buffer, "CANopen-ID") )
+      // check if we received 'Remote'
+      if( 0 == strcmp(rx_buffer, "Remote") )
       {
         error_code_t error_code;
         if( *argument == '\0' )
         {
           if( Terminal_Data.is_remote )
-            Terminal_printf(terminal, "0x%02X\r\n", Terminal_Data.node_id);
+            Terminal_printf(terminal, "connected to node %d\r\n", Terminal_Data.node_id);
           else
             Terminal_printf(terminal, "off\r\n");
         }
         else
         {
-          if( 0 == strcmp(argument, "off") )
+          if( 0 == strcmp(argument, "scan") )
+          {
+            uint8_t i;
+            uint8_t j = Sdo_GetNrOfNodes();
+            char node_seg_buffer[32];
+            Terminal_printf(terminal, "Scanning %d remote nodes...\r\n", j);
+            for( i = 0; i < j; i ++ )
+            {
+              // read SDO CANopen name
+              Sdo_SegRead( i, 0x1008, 0x00, node_seg_buffer, sizeof(node_seg_buffer) );
+              while( Sdo_ReqIsBusy() );
+              if( Sdo_ReqIsFinished() )
+              {
+                Terminal_printf(terminal, "%3d: %s", i, node_seg_buffer);
+                // read SDO CANopen Firmware revision
+                Sdo_SegRead( i, 0x100A, 0x00, node_seg_buffer, sizeof(node_seg_buffer) );
+                while( Sdo_ReqIsBusy() );
+                if( Sdo_ReqIsFinished() )
+                  Terminal_printf(terminal, ", %s", node_seg_buffer);
+                Terminal_printf(terminal, "\r\n");
+              }
+            }
+            Terminal_printf(terminal, "...done.\r\n");
+            return;
+          }
+/*
+          else if( 0 == strcmp(argument, "save") )
+          {
+          }
+*/
+          else if( 0 == strcmp(argument, "off") )
           {
             Terminal_Data.is_remote = FALSE;
             Terminal_printf(terminal, "OK\r\n");
@@ -204,9 +254,9 @@ void Terminal_Task(void)
             {
               Terminal_Data.is_remote = FALSE;
 #ifdef ESTL_ENABLE_ERROR_MESSAGES
-              Terminal_printf(terminal, "Could not fetch parameter from node 0x%02X: %s (error %d)\r\n", node_id, Error_GetMessage(error_code), error_code);
+              Terminal_printf(terminal, "Could not fetch parameter from node %d: %s (error %d)\r\n", node_id, Error_GetMessage(error_code), error_code);
 #else
-              Terminal_printf(terminal, "Could not fetch parameter from node %0x%02X (error %d)\r\n", value, error_code);
+              Terminal_printf(terminal, "Could not fetch parameter from node %d (error %d)\r\n", value, error_code);
 #endif
             }
             else
@@ -219,34 +269,6 @@ void Terminal_Task(void)
         }
         return;
       } // we received 'CANopen-ID'
-
-      // check if we received 'CANopen-scan'
-      if( 0 == strcmp(rx_buffer, "CANopen-scan") )
-      {
-/*
-        uint8_t i;
-        char node_seg_buffer[32];
-        Terminal_printf(terminal, "Scanning 127 CANopen nodes...\r\n");
-        for( i = 1; i <= 127; i ++ )
-        {
-          // read SDO CANopen name
-          CANopen_SegRead( i, 0x1008, 0x00, node_seg_buffer, sizeof(node_seg_buffer) );
-          while( !(CANopen_getState() == CANopen_SDOC_Succes || CANopen_getState() == CANopen_SDOC_Fail) );
-          if( CANopen_getState() == CANopen_SDOC_Succes )
-          {
-            Terminal_printf(terminal, "0x%02X: %s", i, node_seg_buffer);
-            // read SDO CANopen Firmware revision
-            CANopen_SegRead( i, 0x100A, 0x00, node_seg_buffer, sizeof(node_seg_buffer) );
-            while( !(CANopen_getState() == CANopen_SDOC_Succes || CANopen_getState() == CANopen_SDOC_Fail) );
-            if( CANopen_getState() == CANopen_SDOC_Succes )
-              Terminal_printf(terminal, ", %s", node_seg_buffer);
-            Terminal_printf(terminal, "\r\n");
-          }
-        }
-        Terminal_printf(terminal, "...done.\r\n");
-        return;
-*/
-      } // we received 'CANopen-scan'
 #endif // ESTL_ENABLE_TERMINAL_REMOTE_PARAMETER
 
       // check if we received 'help'
@@ -257,16 +279,23 @@ void Terminal_Task(void)
           int16_t i;
           range_t index_range;
 #if( defined(ESTL_ENABLE_TERMINAL_REMOTE_PARAMETER) )
-          Terminal_printf(terminal, "CANopen-scan: Scan CANopen network for available nodes\r\n");
-          Terminal_printf(terminal, "CANopen-ID:   Connect to ID's parameter interface\r\n");
+          Terminal_printf(terminal, "remote: access to remote parameter interface\r\n" \
+                                    "  off:    turn off remote access\r\n" \
+                                    "  scan:   look for available remote nodes\r\n" \
+/*
+                                    "  save:   save remote parameter to non-volatile memory\r\n" \
+*/
+                                    "  0..127: remote node ID to be connected to\r\n" );
 #endif
+/*
 #if( defined(ESTL_ENABLE_SCOPE) && defined(ESTL_ENABLE_DEBUG) )
           Terminal_printf(terminal, "scope: print scope's buffer content\r\n");
 #endif
+*/
 #if( defined(ESTL_ENABLE_TERMINAL_REMOTE_PARAMETER) )
           if( Terminal_Data.is_remote )
           {
-            Terminal_printf(terminal, "CANopen node 0x%02X parameters -- type 'help <parameter>' to get detailed information\r\n", Terminal_Data.node_id);
+            Terminal_printf(terminal, "Remote node %d parameters -- type 'help <parameter>' to get detailed information\r\n", Terminal_Data.node_id);
             parameter_data_t * parameter_data = (parameter_data_t*)Terminal_Data.can_open_buffer;
             for( i = Terminal_Data.can_open_index_range.min; i <= Terminal_Data.can_open_index_range.max; i ++ )
             {
@@ -347,7 +376,7 @@ void Terminal_Task(void)
         }
         return;
       } // we received 'help'
-
+/*
 #if( defined(ESTL_ENABLE_SCOPE) && defined(ESTL_ENABLE_DEBUG) )
       // check if we received 'scope'
       if ( 0 == strcmp(rx_buffer, "scope") )
@@ -369,7 +398,7 @@ void Terminal_Task(void)
         return;
       } // we received 'scope'
 #endif // ESTL_ENABLE_SCOPE && ESTL_ENABLE_DEBUG
-
+*/
 #if( defined(ESTL_ENABLE_TERMINAL_REMOTE_PARAMETER) )
       range_t range;
       if( Terminal_Data.is_remote )
@@ -514,6 +543,18 @@ void Terminal_PrintErrorMessage( const terminal_t * terminal, error_code_t error
 #else
   Terminal_printf(terminal, "ERR: (error %d)\r\n", error);
 #endif
+}
+
+
+bool_t Terminal_PrintScope( uint16_t index, scope_sample_t * scope_sample )
+{
+  if( Terminal_Data.scope_has_new_sample )
+    return FALSE;
+
+  Terminal_Data.scope_sample         = scope_sample;
+  Terminal_Data.scope_sample_index   = index;
+  Terminal_Data.scope_has_new_sample = TRUE;
+  return TRUE;
 }
 
 

@@ -93,7 +93,7 @@
  * the SDO module by calling Sdo_Init():
  *
  * @code
- *   Sdo_Init( sdo_req_msg_obj.data, CanSdoRequest, CanSdoIsAvailable );
+ *   Sdo_Init( sdo_req_msg_obj.data, CanSdoRequest, CanSdoIsAvailable, 128 );
  * @endcode
  *
  * Keep in mind when remote access to the Parameter module is activated it maps
@@ -103,16 +103,18 @@
  * @{
  */
 
-bool_t Sdo_Init( uint8_t * req_data, bool_t (* SdoRequestFunction)(uint8_t), bool_t (* SdoIsAvailableFunction)(void) );
+bool_t Sdo_Init( uint8_t * req_data, bool_t (* SdoRequestFunction)(uint8_t), bool_t (* SdoIsAvailableFunction)(void), uint8_t nr_of_nodes );
 void Sdo_1msTask(void);
 
 bool_t Sdo_ReqIsBusy( void );
 bool_t Sdo_ReqIsFinished( void );
-uint32_t Sdo_GetAbortCode(void);
+uint32_t Sdo_GetAbortCode( void );
+uint8_t Sdo_GetNrOfNodes( void );
+void Sdo_SetNrOfNodes( uint8_t nr_of_nodes );
 
-bool_t Sdo_ExpRead_Foo( uint8_t node_id, uint16_t index, uint8_t subindex, int32_t* data, uint8_t* valid_data_bytes );
-bool_t Sdo_ExpWrite_Foo( uint8_t node_id, uint16_t index, uint8_t subindex, int32_t data, uint8_t length );
-bool_t Sdo_SegRead_Foo( uint8_t node_id, uint16_t index, uint8_t subindex, void* buff, uint32_t buff_size );
+bool_t Sdo_ExpRead( uint8_t node_id, uint16_t index, uint8_t subindex, int32_t* data, uint8_t* valid_data_bytes );
+bool_t Sdo_ExpWrite( uint8_t node_id, uint16_t index, uint8_t subindex, int32_t data, uint8_t length );
+bool_t Sdo_SegRead( uint8_t node_id, uint16_t index, uint8_t subindex, void* buff, uint32_t buff_size );
 
 bool_t Sdo_RxHandler( uint8_t * rx, uint8_t rx_id, uint8_t * resp, uint8_t * resp_id );
 

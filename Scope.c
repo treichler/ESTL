@@ -56,6 +56,7 @@ typedef enum {
   SCOPE_READY,          //!<  waiting for trigger
   SCOPE_TRIGGERED,      //!<  filling the post-trigger buffer
   SCOPE_COMPLETE,       //!<  scope completed
+  SCOPE_READOUT,
   SCOPE_DAQ,            //!<  scope switched to data acquisition
 } scope_state_t;
 
@@ -69,15 +70,35 @@ struct {
 //  scope_state_t *daq;
   int8_t         trigger_channel;
   uint8_t        pre_trigger;
+
   uint16_t       pre_trigger_samples;
   uint16_t       post_trigger_samples;
+
   uint16_t       buffer_index;
   uint16_t       sample_div;
+
   uint16_t       sample_div_counter;
-  uint16_t       daq_index;
+  uint16_t       read_index;
+
   int32_t        trigger_level;
+
+//  uint16_t       read_index;
+  bool_t         (* PrintFunction)(uint16_t, scope_sample_t*);    //!<  Scope data print function
+
   scope_sample_t buffer[ESTL_SCOPE_NR_OF_SAMPLES];
 } Scope_data;
+
+
+/**
+ * Initialize the scope respectively DAQ with a data print function
+ *
+ * @param  PrintFunction
+ */
+void Scope_Init( bool_t (* PrintFunction)(uint16_t, scope_sample_t*) )
+{
+  if( NULL != PrintFunction )
+    Scope_data.PrintFunction = PrintFunction;
+}
 
 
 error_code_t Scope_CmdParameterFunction(parameter_function_t parameter_function, int32_t * cmd)
@@ -86,23 +107,31 @@ error_code_t Scope_CmdParameterFunction(parameter_function_t parameter_function,
     *cmd = (int32_t)Scope_data.state;
   if (parameter_function == PARAMETER_WRITE)
   {
+/*
     if (*cmd < 0)
       return BELOW_LIMIT;
     if (*cmd > 2)
       return ABOVE_LIMIT;
-
-    if( (SCOPE_COMPLETE == Scope_data.state) || (SCOPE_STOP == Scope_data.state) )
+*/
+    if( ((SCOPE_COMPLETE == Scope_data.state) || (SCOPE_STOP == Scope_data.state)) && Scope_data.PrintFunction )
     {
-      if( *cmd == 1 )
+      if( 1 == *cmd )
       {
+        // start scope
         Scope_data.pre_trigger_samples = (Scope_data.pre_trigger * ESTL_SCOPE_NR_OF_SAMPLES) / 100;
         Scope_data.post_trigger_samples = ESTL_SCOPE_NR_OF_SAMPLES - Scope_data.pre_trigger_samples;
         Scope_data.state = SCOPE_ARMED;
       }
-      else if( *cmd == 2 )
+      else if( 2 == *cmd )
       {
-        Scope_data.daq_index = 0;
-        Scope_data.buffer_index = 0;
+        // initiate scope buffer readout
+        Scope_data.read_index = 0;
+        Scope_data.state = SCOPE_READOUT;
+      }
+      else if( 3 == *cmd )
+      {
+        // start DAQ
+        Scope_data.read_index = 0;
         Scope_data.state = SCOPE_DAQ;
       }
     }
@@ -111,7 +140,7 @@ error_code_t Scope_CmdParameterFunction(parameter_function_t parameter_function,
       if( *cmd == 0 )
         Scope_data.state = SCOPE_STOP;
       else
-        return SCOPE_IS_RUNNING;
+        return SCOPE_IS_BUSY;
     }
 
   }
@@ -131,7 +160,7 @@ error_code_t Scope_SetupParameterFunction(parameter_function_t parameter_functio
       Scope_data.trigger_level   = Parameter_GetValue(PARAM_S_TRIGL);
     }
     else
-      return SCOPE_IS_RUNNING;
+      return SCOPE_IS_BUSY;
   }
   return OK;
 }
@@ -142,7 +171,7 @@ void Scope_Task(void)
 //  static uint16_t sample_div = 0;
   uint8_t i;
 
-  if( (SCOPE_STOP != Scope_data.state) && (SCOPE_COMPLETE != Scope_data.state) )
+  if( (SCOPE_STOP != Scope_data.state) && (SCOPE_COMPLETE != Scope_data.state) && (SCOPE_READOUT != Scope_data.state) )
   {
     // check sample divider counter
     if( Scope_data.sample_div_counter )
@@ -199,18 +228,28 @@ void Scope_Task(void)
 
       if( SCOPE_DAQ == Scope_data.state )
       {
-        // increment DAQ index
-        Scope_data.daq_index ++;
+        // print DAQ data and increment index
+        if( Scope_data.PrintFunction )
+          Scope_data.PrintFunction( Scope_data.read_index, &(Scope_data.buffer[Scope_data.buffer_index]) );
+        Scope_data.read_index ++;
       }
-      else
-      {
-        // increment the buffer index only if not in DAQ mode
-        Scope_data.buffer_index ++;
-      }
+
+      // increment the scope's buffer index
+      Scope_data.buffer_index ++;
     }
   }
   else
+  {
     Scope_data.sample_div_counter = 0;
+    if( (SCOPE_READOUT == Scope_data.state) && Scope_data.PrintFunction )
+    {
+      scope_sample_t * scope_sample;
+      if( Scope_data.PrintFunction(Scope_data.read_index, Scope_GetSample(Scope_data.read_index)) )
+        Scope_data.read_index ++;
+      if( ESTL_SCOPE_NR_OF_SAMPLES <= Scope_data.read_index )
+        Scope_data.state = SCOPE_COMPLETE;
+    }
+  }
 }
 
 
@@ -226,7 +265,7 @@ scope_sample_t * Scope_GetSample(uint16_t index)
   return &(Scope_data.buffer[index]);
 }
 
-
+/*
 inline bool_t Scope_IsComplete( void )
 {
   return SCOPE_COMPLETE == Scope_data.state;
@@ -244,18 +283,19 @@ inline bool_t Scope_IsDaqMode( void )
 {
   return SCOPE_DAQ == Scope_data.state;
 }
-
+*/
 
 /**
  * TODO Improve DAQ reading to avoid race conditions:
  *      Currently the returned sample could be overwritten during
  *      function call and further processing...
  */
+/*
 uint16_t Scope_ReadDaqSample( scope_sample_t ** sample )
 {
   *sample = &(Scope_data.buffer[Scope_data.buffer_index]);
   return Scope_data.daq_index;
 }
-
+*/
 
 #endif // ESTL_ENABLE_SCOPE && ESTL_ENABLE_DEBUG

@@ -94,7 +94,7 @@ typedef enum {
   RF_NO_DATA_RECEIVED,          //!<  There is no new data or received package does not contain data
   RF_CANNOT_SEND,               //!<  Sending is currently not possible
 
-  SCOPE_IS_RUNNING,             //!<  Scope is already running
+  SCOPE_IS_BUSY,                //!<  Scope is already running
 
   CAN_SDO_CONNECTION_FAILED,    //!<  CANopen SDO connection failed
   CAN_TX_MAILBOX_NOT_EMPTY,     //!<  The accessed CAN mailbox is not yet sent

@@ -80,7 +80,7 @@ const char * Error_GetMessage(error_code_t error)
     [RF_NO_DATA_RECEIVED          - UNKNOWN_ERROR] = "",
     [RF_CANNOT_SEND               - UNKNOWN_ERROR] = "",
 
-    [SCOPE_IS_RUNNING             - UNKNOWN_ERROR] = "Scope is running",
+    [SCOPE_IS_BUSY                - UNKNOWN_ERROR] = "Scope is busy",
 
     [CAN_SDO_CONNECTION_FAILED    - UNKNOWN_ERROR] = "CAN SDO connection failed",
     [CAN_TX_MAILBOX_NOT_EMPTY     - UNKNOWN_ERROR] = "",

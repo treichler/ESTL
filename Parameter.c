@@ -361,7 +361,7 @@ const parameter_table_entry_t System_Parameter_table[] = {
   [ESTL_PARAM_D_DATA]      = {"d-data",     UNIT_NONE,            REPR_DEC,  LEVEL_3|R_W|HIDE,       INT32_MIN,          0,      INT32_MAX,    &Debug_DataParameterFunction,  "Access the variable.\nIf mask is 0, then the content of the debug lookup-table will be read."},
 #endif
 #if( defined(ESTL_ENABLE_SCOPE) && defined(ESTL_ENABLE_DEBUG) )
-  [ESTL_PARAM_S_CMD]       = {"s-cmd",      UNIT_NONE,            REPR_DEC,  LEVEL_3|R_W|HIDE,       INT32_MIN,          0,      INT32_MAX,     &Scope_CmdParameterFunction,  "Scope command:\n0: stop\n1: start/armed\n2: ready\n3: triggered\n4: complete"},
+  [ESTL_PARAM_S_CMD]       = {"s-cmd",      UNIT_NONE,            REPR_DEC,  LEVEL_3|R_W|HIDE,               0,          0,              3,     &Scope_CmdParameterFunction,  "Scope command:\n0: stop\n1: start/armed\n2: ready\n3: triggered\n4: complete"},
   [ESTL_PARAM_S_DIV]       = {"s-div",      UNIT_NONE,            REPR_DEC,  LEVEL_3|R_W|HIDE|INFO,          1,          1,     UINT16_MAX,   &Scope_SetupParameterFunction,  "Sample divider - save every nth sample."},
   [ESTL_PARAM_S_PRE]       = {"s-pre",      UNIT_PERCENT,         REPR_DEC,  LEVEL_3|R_W|HIDE|INFO,          0,          0,            100,   &Scope_SetupParameterFunction,  "Pre-trigger buffer size."},
   [ESTL_PARAM_S_TRIGC]     = {"s-trigc",    UNIT_NONE,            REPR_DEC,  LEVEL_3|R_W|HIDE|INFO, -DEBUG_MAX,          0,      DEBUG_MAX,   &Scope_SetupParameterFunction,  "Trigger channel, where the sign represents the trigger-edge."},
@@ -742,7 +742,7 @@ error_code_t Parameter_LoadNvData(void)
     return PARAMETER_CONTENT_CHANGE;
   return init_status;
 #else
-  return PARAMETER_NOT_INITIALIZED;
+  return PARAMETER_STORAGE_MISSING;
 #endif
 }
 
