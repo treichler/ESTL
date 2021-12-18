@@ -145,13 +145,30 @@
 
 
 //-------------------------------------------------------------------------------------------------
-//  Parameter access keys
+//  Parameter
 //-------------------------------------------------------------------------------------------------
 
-#define USER_ACCESS_SECRET              (1)
-#define SERVICE_ACCESS_SECRET           (2)
-#define PRODUCTION_ACCESS_SECRET        (3)
-#define DEVELOPER_ACCESS_SECRET         (4)
+/**
+ * Define how the parameters' help text should be treated.
+ * Possible options are:
+ *
+ * Option            | Description
+ * ------------------|----------------------------------------
+ * HELP_TEXT_DEFAULT | The provided default text is used
+ * HELP_TEXT_HIDDEN  | The text is replaced by an empty string
+ */
+#define HELP_TEXT       HELP_TEXT_DEFAULT
+
+/**
+ * @name  Parameter access keys
+ * @brief Define application's parameter access keys for individual access levels
+ * @{
+ */
+#define USER_ACCESS_SECRET              (1)     //!< Unlocks end-user parameter
+#define SERVICE_ACCESS_SECRET           (2)     //!< Unlocks service and end-user parameter
+#define PRODUCTION_ACCESS_SECRET        (3)     //!< Unlocks production, service and end-user parameter
+#define DEVELOPER_ACCESS_SECRET         (4)     //!< Unlocks all parameter
+/** @} */
 
 
 //-------------------------------------------------------------------------------------------------

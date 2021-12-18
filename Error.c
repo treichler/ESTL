@@ -45,7 +45,7 @@ const char * Error_GetMessage(error_code_t error)
     [VALUE_INVALID                - UNKNOWN_ERROR] = "Value invalid",
     [VALUE_UNAVAILABLE            - UNKNOWN_ERROR] = "Value unavailable",
     [FUNCTION_UNAVAILABLE         - UNKNOWN_ERROR] = "Function unavailable",
-    [ADDRESS_NOT_ACCESSIBLE       - UNKNOWN_ERROR] = "Address not accessible",
+    [NOT_ACCESSIBLE               - UNKNOWN_ERROR] = "Not accessible",
     [TIMEOUT                      - UNKNOWN_ERROR] = "Timeout",
     [RESOURCE_BUSY                - UNKNOWN_ERROR] = "Resource busy",
     [BUFFER_TOO_SMALL             - UNKNOWN_ERROR] = "Buffer too small",

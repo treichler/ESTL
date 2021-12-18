@@ -82,6 +82,16 @@
 
 
 /**
+ * @name  Help text representation
+ * @brief Several variants of how a help text should be treated
+ * @{
+ */
+#define HELP_TEXT_DEFAULT(a)    (a)     //!< Insert the provided help text
+#define HELP_TEXT_HIDDEN(a)     ("")    //!< Replace the help text with empty string
+/** @} */
+
+
+/**
  * @} end of ESTL
  */
 

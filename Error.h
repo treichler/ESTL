@@ -59,7 +59,7 @@ typedef enum {
   VALUE_UNAVAILABLE,            //!<  Value is unavailable
   NOT_INITIALIZED,              //!<  Call to an uninitialized module's function
   FUNCTION_UNAVAILABLE,         //!<  Function is unavailable
-  ADDRESS_NOT_ACCESSIBLE,       //!<  Desired address is not accessible
+  NOT_ACCESSIBLE,               //!<  Desired resource is not accessible
   TIMEOUT,                      //!<  A general timeout occurred
   RESOURCE_BUSY,                //!<  The requested resource is currently busy
   BUFFER_TOO_SMALL,             //!<  Buffer is too small

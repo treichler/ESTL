@@ -64,32 +64,49 @@
  */
 int32_t Debug_GetValue(uint8_t index);
 
+
 /**
  * Parameter function to access and set debug channel index
+ * @return      No checking is performed, so always OK is returned.
  */
 error_code_t Debug_IndexParameterFunction(parameter_function_t parameter_function, int32_t * index);
+
 
 /**
  * Parameter function to access and set variable's address.
  * The function accesses the currently selected debug channel index.
+ * In case that the currently activated parameter access level is lower than
+ * developer-access, the provided address is checked against a white-list.
+ * If the address is not white-listed it is discarded.
+ * @return
+ *   @retval OK                 Read respectively write of address was successfully
+ *   @retval NOT_ACCESSIBLE     Provided address is not accessible
  */
 error_code_t Debug_AddrParameterFunction(parameter_function_t parameter_function, int32_t * address);
+
 
 /**
  * Parameter function to access and set variable's access mask.
  * The function accesses the currently selected debug channel index.
+ * In case that the currently activated parameter access level is lower than
+ * developer-access, the address (see Debug_AddrParameterFunction()) is checked
+ * against a white-list.
+ * If the address is not white-listed the mask discarded.
+ * @return
+ *   @retval OK                 Read respectively write of mask was successfully
+ *   @retval NOT_ACCESSIBLE     Currently set address is forbidden and so the mask is discarded
  */
 error_code_t Debug_MaskParameterFunction(parameter_function_t parameter_function, int32_t * mask);
 
-/**
- * Parameter function to access and set variable's representation.
- * The function accesses the currently selected debug channel index.
- */
-error_code_t Debug_ReprParameterFunction(parameter_function_t parameter_function, int32_t * value);
 
 /**
  * Parameter function to read and write the variable.
  * The function accesses the currently selected debug channel index.
+ * In case that the currently activated parameter access level is lower than
+ * developer-access, only read access to this function is granted.
+ * @return
+ *   @retval OK                 Read respectively write of data was successfully
+ *   @retval NOT_ACCESSIBLE     Write access is denied.
  */
 error_code_t Debug_DataParameterFunction(parameter_function_t parameter_function, int32_t * value);
 

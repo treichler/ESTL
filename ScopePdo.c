@@ -48,67 +48,30 @@
 
 struct {
   scope_pdo_sample_t    sample_buffer[SCOPE_PDO_NR_OF_BUFFER_ENTRIES];
-  scope_pdo_sample_t    *new_sample;
   uint8_t               sample_buffer_index;
-  uint8_t               channel_index_max;
-  uint8_t               channel_learning_counter;
-  bool_t                is_new_sample;
+  bool_t                sample_is_complete;
 } ScopePdo_data;
 
 
-inline bool_t ScopePdo_HasNewSample( void )
-{
-  return ScopePdo_data.is_new_sample;
-}
-
-
-inline void ScopePdo_ClearNewSampleFlag( void )
-{
-  ScopePdo_data.is_new_sample = FALSE;
-}
-
-
-inline void ScopePdo_Clear( void )
-{
-  ScopePdo_data.channel_index_max = 0;
-  ScopePdo_data.channel_learning_counter = 0;
-}
-
-
-inline scope_pdo_sample_t * ScopePdo_GetNewSample( void )
-{
-  return ScopePdo_data.new_sample;
-}
-
-
-inline uint16_t ScopePdo_GetNrOfChannels( void )
-{
-  return ScopePdo_data.channel_index_max + 1;
-}
-
-
+#if( defined(ESTL_ENABLE_TERMINAL_REMOTE_PARAMETER) )
 void ScopePdo_ReceiveDaq( uint8_t node_id, uint8_t * rx )
 {
-  uint16_t sample_index, channel_index;
+  uint16_t sample_index;
+  uint8_t channel_index, nr_of_channels;
   uint32_t value;
-  sample_index   =  (uint16_t)rx[0];
-  sample_index  |= ((uint16_t)rx[1] << 8);
-  channel_index  =  (uint16_t)rx[2];
-  channel_index |= ((uint16_t)rx[3] << 8);
-  value          =  (uint32_t)rx[4];
-  value         |= ((uint32_t)rx[5] << 8);
-  value         |= ((uint32_t)rx[6] << 16);
-  value         |= ((uint32_t)rx[7] << 24);
+  sample_index    =  (uint16_t)rx[0];
+  sample_index   |= ((uint16_t)rx[1] << 8);
+  channel_index   =            rx[2];
+  nr_of_channels  =            rx[3];
+  value           =  (uint32_t)rx[4];
+  value          |= ((uint32_t)rx[5] << 8);
+  value          |= ((uint32_t)rx[6] << 16);
+  value          |= ((uint32_t)rx[7] << 24);
 
   // check if sample is new
   if( ScopePdo_data.sample_buffer[ScopePdo_data.sample_buffer_index].index != sample_index )
   {
-//    if( NR_OF_CHANNEL_LEARNING_SAMPLES > ScopePdo_data.channel_learning_counter )
-    {
-      ScopePdo_data.is_new_sample = TRUE;
-      ScopePdo_data.new_sample = &(ScopePdo_data.sample_buffer[ScopePdo_data.sample_buffer_index]);
-      ScopePdo_data.channel_learning_counter ++;
-    }
+    ScopePdo_data.sample_buffer[ScopePdo_data.sample_buffer_index].nr_channels = nr_of_channels;
     // use next buffer
     ScopePdo_data.sample_buffer_index ++;
     if( ScopePdo_data.sample_buffer_index >= SCOPE_PDO_NR_OF_BUFFER_ENTRIES )
@@ -118,38 +81,28 @@ void ScopePdo_ReceiveDaq( uint8_t node_id, uint8_t * rx )
     // clear validity bits
     ScopePdo_data.sample_buffer[ScopePdo_data.sample_buffer_index].validity_bits = 0;
   }
+
   // write sample to buffer
   if( SCOPE_PDO_MAX_NR_OF_CHANNELS > channel_index )
   {
     ScopePdo_data.sample_buffer[ScopePdo_data.sample_buffer_index].sample[channel_index] = (int32_t)value;
     ScopePdo_data.sample_buffer[ScopePdo_data.sample_buffer_index].node_id = node_id;
     ScopePdo_data.sample_buffer[ScopePdo_data.sample_buffer_index].validity_bits |= (1 << channel_index);
-/*
-    if( NR_OF_CHANNEL_LEARNING_SAMPLES <= ScopePdo_data.channel_learning_counter )
-    {
-      if( channel_index == ScopePdo_data.nr_of_channels )
-      ScopePdo_data.is_new_sample = TRUE;
-    }
-    else
-    {
-      // adapt number of scope channels
-      if( ScopePdo_data.nr_of_channels < channel_index )
-        ScopePdo_data.nr_of_channels = channel_index;
-    }
-*/
-    // adapt number of scope channels
-    if( ScopePdo_data.channel_index_max < channel_index )
-      ScopePdo_data.channel_index_max = channel_index;
+
+    // check if this is sample's last channel
+    if( channel_index == (nr_of_channels - 1) )
+      Terminal_PrintPdoScope( &(ScopePdo_data.sample_buffer[ScopePdo_data.sample_buffer_index]) );
   }
 }
+#endif
 
 
-void ScopePdo_PrepareDaqTx( uint8_t * tx, int32_t value, uint16_t channel_index, uint16_t sample_index )
+void ScopePdo_PrepareDaqTx( uint8_t * tx, int32_t value, uint8_t channel_index, uint16_t sample_index )
 {
   tx[0] = (uint8_t)(sample_index);
   tx[1] = (uint8_t)(sample_index >> 8);
   tx[2] = (uint8_t)(channel_index);
-  tx[3] = (uint8_t)(channel_index >> 8);
+  tx[3] = (uint8_t)(ESTL_DEBUG_NR_OF_ENTRIES);
   tx[4] = (uint8_t)(value);
   tx[5] = (uint8_t)(value >> 8);
   tx[6] = (uint8_t)(value >> 16);

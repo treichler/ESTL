@@ -32,22 +32,18 @@
 #define __SCOPE_PDO_H__
 
 
-#define SCOPE_PDO_MAX_NR_OF_CHANNELS    (8) // valid range: 2..8
+#define SCOPE_PDO_MAX_NR_OF_CHANNELS    (16) // valid range: 1..16
 
 typedef struct {
   int32_t  sample[SCOPE_PDO_MAX_NR_OF_CHANNELS];
-  uint16_t index;
+  uint16_t validity_bits;
+  uint8_t  nr_channels;
   uint8_t  node_id;
-  uint8_t  validity_bits;
+  uint16_t index;
 } scope_pdo_sample_t;
 
 
-bool_t ScopePdo_HasNewSample( void );
-void ScopePdo_ClearNewSampleFlag( void );
-void ScopePdo_Clear( void );
-scope_pdo_sample_t * ScopePdo_GetNewSample( void );
-uint16_t ScopePdo_GetNrOfChannels( void );
 void ScopePdo_ReceiveDaq( uint8_t node_id, uint8_t * rx );
-void ScopePdo_PrepareDaqTx( uint8_t * tx, int32_t value, uint16_t channel_index, uint16_t sample_index );
+void ScopePdo_PrepareDaqTx( uint8_t * tx, int32_t value, uint8_t channel_index, uint16_t sample_index );
 
 #endif // __SCOPE_PDO_H__

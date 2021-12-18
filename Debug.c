@@ -40,21 +40,19 @@
 typedef struct {
   int32_t address;
   int32_t mask;
-  repr_t  repr;
 } Debug_data_access_t;
 
 struct {
   Debug_data_access_t   debug[ESTL_DEBUG_NR_OF_ENTRIES];
   uint8_t               index;
-} Debug_data = {.debug = {{0}}, .index = 0};
+} Debug_data;
 
 
-
-//error_code_t Debug_CheckAddress(int32_t address)
-//{
-//  // TODO check if address is accessible
-//  return OK;
-//}
+bool_t Debug_AddressIsWhiteListed( int32_t address )
+{
+  // TODO check if address is allowed
+  return TRUE;
+}
 
 
 int32_t Debug_GetValue(uint8_t index)
@@ -68,9 +66,9 @@ int32_t Debug_GetValue(uint8_t index)
 //    if ((OK == Debug_CheckAddress(address)))
 //    {
       if (mask & 0xFFFF0000)
-        return (*(int32_t*)address) & mask;                           // read as 32 bit type
+        return (*(int32_t*)address) & mask;                         // read as 32 bit type
       else if (mask & 0xFF00)
-        return (int32_t)((*(int16_t*)address) & (int16_t)mask);       // read as 16 bit type
+        return (int32_t)((*(int16_t*)address) & (int16_t)mask);     // read as 16 bit type
       return (int32_t)((*(int8_t*)address) & (int8_t)mask);         // read as 8 bit type
 //    }
   }
@@ -84,8 +82,8 @@ error_code_t Debug_AddrParameterFunction(parameter_function_t parameter_function
     *address = Debug_data.debug[Debug_data.index].address;
   if (parameter_function == PARAMETER_WRITE)
   {
-//    if (OK != Debug_CheckAddress(*address))
-//      return ADDRESS_NOT_ACCESSIBLE;
+    if( (! Parameter_CurrentAccessLevelIsDeveloper()) && (! Debug_AddressIsWhiteListed(*address)) )
+      return NOT_ACCESSIBLE;
     Debug_data.debug[Debug_data.index].address = *address;
   }
   return OK;
@@ -97,34 +95,21 @@ error_code_t Debug_MaskParameterFunction(parameter_function_t parameter_function
   if (parameter_function == PARAMETER_READ)
     *mask = Debug_data.debug[Debug_data.index].mask;
   if (parameter_function == PARAMETER_WRITE)
+  {
+    if( (! Parameter_CurrentAccessLevelIsDeveloper()) && (! Debug_AddressIsWhiteListed(Debug_data.debug[Debug_data.index].address)) )
+      return NOT_ACCESSIBLE;
     Debug_data.debug[Debug_data.index].mask = *mask;
+  }
   return OK;
 }
 
 
 error_code_t Debug_IndexParameterFunction(parameter_function_t parameter_function, int32_t * index)
 {
-  if (parameter_function == PARAMETER_READ)
+  if( parameter_function == PARAMETER_READ )
     *index = (int32_t)Debug_data.index + 1;
-  if (parameter_function == PARAMETER_WRITE)
-  {
-    if (*index < 1)
-      return BELOW_LIMIT;
-    if (*index > ESTL_DEBUG_NR_OF_ENTRIES)
-      return ABOVE_LIMIT;
-
+  if( parameter_function == PARAMETER_WRITE )
     Debug_data.index = (*index) - 1;
-  }
-  return OK;
-}
-
-
-error_code_t Debug_ReprParameterFunction(parameter_function_t parameter_function, int32_t * type)
-{
-  if (parameter_function == PARAMETER_READ)
-    *type = (int32_t)(Debug_data.debug[Debug_data.index].repr);
-  if (parameter_function == PARAMETER_WRITE)
-    Debug_data.debug[Debug_data.index].repr = (repr_t)(*type);
   return OK;
 }
 
@@ -135,7 +120,7 @@ error_code_t Debug_DataParameterFunction(parameter_function_t parameter_function
   address = Debug_data.debug[Debug_data.index].address;
   mask = Debug_data.debug[Debug_data.index].mask;
 
-  if (parameter_function == PARAMETER_READ)
+  if( parameter_function == PARAMETER_READ )
   {
     // if mask is zero return value from address lookup table
     if (mask == 0x00000000)
@@ -143,10 +128,10 @@ error_code_t Debug_DataParameterFunction(parameter_function_t parameter_function
     else
       *value = Debug_GetValue(Debug_data.index);
   }
-  if (parameter_function == PARAMETER_WRITE)
+  if( parameter_function == PARAMETER_WRITE )
   {
-  //  if (OK != Debug_CheckAddress(address))
-  //    return ADDRESS_NOT_ACCESSIBLE;
+    if( ! Parameter_CurrentAccessLevelIsDeveloper() )
+      return NOT_ACCESSIBLE;
 
     // write value only if mask is not zero
     if (mask != 0)

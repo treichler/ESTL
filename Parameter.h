@@ -147,18 +147,22 @@ enum {
 #endif
 };
 
-
-#define R_O             (0x000) //!< Read only parameter access
-#define R_W             (0x010) //!< Read and write parameter access
-#define NVMEM           (0x020) //!< Store parameter in non-volatile memory
-#define INFO            (0x040) //!< Show parameter information in help context
-#define LEVEL_SHIFT     (8)     //!< Bit position of access level
-#define LEVEL_MASK      (0x300) //!< Mask parameter access level
-#define LEVEL_0         (0x000) //!< Accessible for all
-#define LEVEL_1         (0x100) //!< User access
-#define LEVEL_2         (0x200) //!< Production access
-#define LEVEL_3         (0x300) //!< Developer access
-#define HIDE            (0X800) //!< Hide the parameter in case of too low access level
+/**
+ * @name  Parameter flags
+ * @{
+ */
+#define LEVEL_MASK      (0x07)  //!< Access level mask, needs to be aligned with LSB
+#define LEVEL_0         (0x00)  //!< Accessible for all
+#define LEVEL_1         (0x01)  //!< User access
+#define LEVEL_2         (0x02)  //!< Service access
+#define LEVEL_3         (0x03)  //!< Production access
+#define LEVEL_4         (0x04)  //!< Developer access
+#define HIDE            (0x08)  //!< Hide the parameter in case of too low access level
+#define R_O             (0x00)  //!< Read only parameter access
+#define R_W             (0x10)  //!< Read and write parameter access
+#define NVMEM           (0x20)  //!< Store parameter in non-volatile memory
+#define INFO            (0x40)  //!< Show parameter information in help context
+/** @} */
 
 
 /**
@@ -215,6 +219,16 @@ typedef struct
  *          The return values are similar to Parameter_LoadNvData().
  */
 error_code_t Parameter_Init(void);
+
+
+/**
+ * Check if the currently activated parameter access level is developer access.
+ *
+ * @return
+ *   @retval    TRUE    developer access is activated
+ *   @retval    FALSE   developer access is deactivated
+ */
+bool_t Parameter_CurrentAccessLevelIsDeveloper(void);
 
 
 /**

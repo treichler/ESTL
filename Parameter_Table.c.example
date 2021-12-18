@@ -32,10 +32,10 @@
  */
 const parameter_table_entry_t Parameter_table[] = {
   //                     name         unit            representation            control flags         minimum      nominal      maximum                 function pointer    information/help
-  [PARAM_FM_FREQ]    = {"fm-freq",    UNIT_MEG_HERTZ,     REPR_Q15_1,  LEVEL_2|R_W|NVMEM|INFO,      Q15(87.5),   Q15(91.2),  Q15(108.0),  &FmTuner_FreqParameterFunction,  "FM tuner frequency"},
-  [PARAM_FM_CTRL]    = {"fm-ctrl",    UNIT_NONE,         REPR_HEX_02,  LEVEL_2|R_W|NVMEM|INFO,           0x00,        0x01,        0xFF,  &FmTuner_CtrlParameterFunction,  "FM tuner control bits\r\n0x01: Demodulator on/off\r\n0x80: T-Bias on/off"},
-  [PARAM_TEST_1]     = {"test_1",     UNIT_NONE,            REPR_DEC,   LEVEL_2|R_W|INFO|HIDE,              0,         800,       10000,                               0,  ""},
-  [PARAM_TEST_1]     = {"test_2",     UNIT_NONE,            REPR_DEC,   LEVEL_2|R_W|INFO|HIDE,      INT16_MIN,           0,   INT16_MAX,                               0,  ""},
+  [PARAM_FM_FREQ]    = {"fm-freq",    UNIT_MEG_HERTZ,     REPR_Q15_1,  LEVEL_0|R_W|NVMEM|INFO,      Q15(87.5),   Q15(91.2),  Q15(108.0),  &FmTuner_FreqParameterFunction,  HELP_TEXT("FM tuner frequency")},
+  [PARAM_FM_CTRL]    = {"fm-ctrl",    UNIT_NONE,         REPR_HEX_02,  LEVEL_0|R_W|NVMEM|INFO,           0x00,        0x01,        0xFF,  &FmTuner_CtrlParameterFunction,  HELP_TEXT("FM tuner control bits\r\n0x01: Demodulator on/off\r\n0x80: T-Bias on/off")},
+  [PARAM_TEST_1]     = {"test_1",     UNIT_NONE,            REPR_DEC,   LEVEL_1|R_W|INFO|HIDE,              0,         800,       10000,                               0,  HELP_TEXT("Some information related to this parameter")},
+  [PARAM_TEST_2]     = {"test_2",     UNIT_NONE,            REPR_DEC,   LEVEL_2|R_W|INFO|HIDE,      INT16_MIN,           0,   INT16_MAX,                               0,  HELP_TEXT("Some information related to this parameter")},
 };
 
 

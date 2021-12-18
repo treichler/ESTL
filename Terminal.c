@@ -66,6 +66,9 @@ struct {
   uint16_t last_daq_index;
   uint16_t scope_sample_index;
   scope_sample_t * scope_sample;
+
+  scope_pdo_sample_t * scope_pdo_sample;
+  bool_t scope_pdo_has_new_sample;
 } Terminal_Data;
 
 
@@ -77,6 +80,9 @@ void Terminal_PrintParameterDetails( const terminal_t * terminal, parameter_data
 void Terminal_ParameterNotFoundMessage( const terminal_t * terminal, char *rx_buffer );
 void Terminal_PrintErrorMessage( const terminal_t * terminal, error_code_t error );
 bool_t Terminal_PrintScope( uint16_t index, scope_sample_t * scope_sample );
+
+bool_t Terminal_PrintPdoScope( scope_pdo_sample_t * scope_pdo_sample );
+
 #if( defined(ESTL_ENABLE_TERMINAL_REMOTE_PARAMETER) )
 error_code_t Terminal_InitCanOpenTable( uint8_t node_id );
 int16_t Terminal_CanOpenFindIndexByName( char * parameter_name );
@@ -136,56 +142,32 @@ void Terminal_Task(void)
       Terminal_printf( terminal, "\r\n" );
       Terminal_Data.scope_has_new_sample = FALSE;
     }
-/*
-    if( Scope_IsDaqMode() )
-    {
-      // print DAQ
-      scope_sample_t * daq_sample;
-      uint16_t daq_index, i;
-      daq_index = Scope_ReadDaqSample( &daq_sample );
-      if( Terminal_Data.last_daq_index != daq_index )
-      {
-        Terminal_Data.last_daq_index = daq_index;
-        Terminal_printf( terminal, "0x%04X", daq_index );
-        for(i = 0; i < ESTL_DEBUG_NR_OF_ENTRIES; i ++)
-        {
-          Terminal_printf( terminal, "\t%d", daq_sample->channel[i] );
-        }
-        Terminal_printf( terminal, "\r\n" );
-      }
-    }
-*/
 #endif
 
 #if( defined(ESTL_ENABLE_TERMINAL_REMOTE_PARAMETER) )
     // check if remote DAQ to be printed
-    if( ScopePdo_HasNewSample() )
+    if( Terminal_Data.scope_pdo_has_new_sample )
     {
-      uint16_t i;
-      scope_pdo_sample_t * sample = ScopePdo_GetNewSample();
-      ScopePdo_ClearNewSampleFlag();
-
-      Terminal_printf( terminal, "%3d\t%d", sample->node_id, sample->index );
-      for(i = 0; (i < ScopePdo_GetNrOfChannels()) && (i < SCOPE_PDO_MAX_NR_OF_CHANNELS); i ++)
+      uint8_t i;
+      Terminal_printf( terminal, "%d\t0x%04X", Terminal_Data.scope_pdo_sample->node_id, Terminal_Data.scope_pdo_sample->index );
+      for( i = 0; (i < Terminal_Data.scope_pdo_sample->nr_channels) && (i < SCOPE_PDO_MAX_NR_OF_CHANNELS); i ++ )
       {
-        if( (1 << i) & sample->validity_bits )
-          Terminal_printf( terminal, "\t%d", sample->sample[i] );
+        if( (1 << i) & Terminal_Data.scope_pdo_sample->validity_bits )
+          Terminal_printf( terminal, "\t%d", Terminal_Data.scope_pdo_sample->sample[i] );
         else
           Terminal_printf( terminal, "\t##" );
       }
       Terminal_printf( terminal, "\r\n" );
+      Terminal_Data.scope_pdo_has_new_sample = FALSE;
     }
 #endif
 
     // check if new data is available
     if( terminal->ReceivedNewLine( &rx_buffer ) )
-//    if( terminal->receivedNewData() )
     {
       int16_t parameter_index;
-//      char *rx_buffer, *argument;
 
       // split string to command and argument
-//      rx_buffer = argument = terminal->receive_buffer;
       argument = rx_buffer;
       while( (*argument != ' ') && (*argument != '\0') )
         argument ++;
@@ -194,11 +176,10 @@ void Terminal_Task(void)
         *argument = '\0';
         argument ++;
       }
-//      Terminal_printf(terminal, "command: %s\targument: %s\r\n", rx_buffer, argument);
 
 #if( defined(ESTL_ENABLE_TERMINAL_REMOTE_PARAMETER) )
-      // check if we received 'Remote'
-      if( 0 == strcmp(rx_buffer, "Remote") )
+      // check if we received 'remote'
+      if( 0 == strcmp(rx_buffer, "remote") )
       {
         error_code_t error_code;
         if( *argument == '\0' )
@@ -287,11 +268,7 @@ void Terminal_Task(void)
 */
                                     "  0..127: remote node ID to be connected to\r\n" );
 #endif
-/*
-#if( defined(ESTL_ENABLE_SCOPE) && defined(ESTL_ENABLE_DEBUG) )
-          Terminal_printf(terminal, "scope: print scope's buffer content\r\n");
-#endif
-*/
+
 #if( defined(ESTL_ENABLE_TERMINAL_REMOTE_PARAMETER) )
           if( Terminal_Data.is_remote )
           {
@@ -334,10 +311,6 @@ void Terminal_Task(void)
               Terminal_ParameterNotFoundMessage(terminal, argument);
             else
             {
-//              parameter_read_status = Parameter_ReadData(parameter_index, &parameter_data);
-//              if( parameter_read_status != OK )
-//                Terminal_ReadErrorMessage(terminal, parameter_read_status);
-//              else
               char info[256];
               error_code_t error_code;
               int32_t value;
@@ -376,29 +349,6 @@ void Terminal_Task(void)
         }
         return;
       } // we received 'help'
-/*
-#if( defined(ESTL_ENABLE_SCOPE) && defined(ESTL_ENABLE_DEBUG) )
-      // check if we received 'scope'
-      if ( 0 == strcmp(rx_buffer, "scope") )
-      {
-        uint16_t i, sample;
-        scope_sample_t * scope_sample;
-        Terminal_printf(terminal, "Scope content:\r\n");
-        for( sample = 0; sample < ESTL_SCOPE_NR_OF_SAMPLES; sample ++ )
-        {
-          scope_sample = Scope_GetSample(sample);
-          Terminal_printf( terminal, "0x%04X", sample );
-          for(i = 0; i < ESTL_DEBUG_NR_OF_ENTRIES; i ++)
-          {
-            Terminal_printf(terminal, "\t%d", scope_sample->channel[i] );
-          }
-          Terminal_printf( terminal, "\r\n" );
-        }
-        Terminal_printf( terminal, "\r\n" );
-        return;
-      } // we received 'scope'
-#endif // ESTL_ENABLE_SCOPE && ESTL_ENABLE_DEBUG
-*/
 #if( defined(ESTL_ENABLE_TERMINAL_REMOTE_PARAMETER) )
       range_t range;
       if( Terminal_Data.is_remote )
@@ -554,6 +504,17 @@ bool_t Terminal_PrintScope( uint16_t index, scope_sample_t * scope_sample )
   Terminal_Data.scope_sample         = scope_sample;
   Terminal_Data.scope_sample_index   = index;
   Terminal_Data.scope_has_new_sample = TRUE;
+  return TRUE;
+}
+
+
+bool_t Terminal_PrintPdoScope( scope_pdo_sample_t * scope_pdo_sample )
+{
+  if( Terminal_Data.scope_pdo_has_new_sample )
+    return FALSE;
+
+  Terminal_Data.scope_pdo_sample = scope_pdo_sample;
+  Terminal_Data.scope_pdo_has_new_sample = TRUE;
   return TRUE;
 }
 

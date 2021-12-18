@@ -55,9 +55,9 @@ typedef enum {
   SCOPE_ARMED,          //!<  filling the pre-trigger buffer
   SCOPE_READY,          //!<  waiting for trigger
   SCOPE_TRIGGERED,      //!<  filling the post-trigger buffer
-  SCOPE_COMPLETE,       //!<  scope completed
-  SCOPE_READOUT,
-  SCOPE_DAQ,            //!<  scope switched to data acquisition
+  SCOPE_COMPLETE,       //!<  scope recording completed
+  SCOPE_READOUT,        //!<  scope's buffer content is forwarded to print function
+  SCOPE_DAQ,            //!<  DAQ mode, data is continuously forwarded to print function
 } scope_state_t;
 
 
@@ -122,18 +122,20 @@ error_code_t Scope_CmdParameterFunction(parameter_function_t parameter_function,
         Scope_data.post_trigger_samples = ESTL_SCOPE_NR_OF_SAMPLES - Scope_data.pre_trigger_samples;
         Scope_data.state = SCOPE_ARMED;
       }
-      else if( 2 == *cmd )
+      else if( 5 == *cmd )
       {
         // initiate scope buffer readout
         Scope_data.read_index = 0;
         Scope_data.state = SCOPE_READOUT;
       }
-      else if( 3 == *cmd )
+      else if( 6 == *cmd )
       {
         // start DAQ
         Scope_data.read_index = 0;
         Scope_data.state = SCOPE_DAQ;
       }
+      else
+        return VALUE_INVALID;
     }
     else
     {
@@ -243,7 +245,6 @@ void Scope_Task(void)
     Scope_data.sample_div_counter = 0;
     if( (SCOPE_READOUT == Scope_data.state) && Scope_data.PrintFunction )
     {
-      scope_sample_t * scope_sample;
       if( Scope_data.PrintFunction(Scope_data.read_index, Scope_GetSample(Scope_data.read_index)) )
         Scope_data.read_index ++;
       if( ESTL_SCOPE_NR_OF_SAMPLES <= Scope_data.read_index )

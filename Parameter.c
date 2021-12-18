@@ -126,6 +126,16 @@
 #define DEBUG_MAX (ESTL_DEBUG_NR_OF_ENTRIES)
 #define DEBUG_MIN (1)
 
+// scope's help text
+#define SCOPE_HELP_STR          ("Scope command:\n" \
+                                 "0 rw: stop\n" \
+                                 "1 rw: start/armed\n" \
+                                 "2 ro: ready\n" \
+                                 "3 ro: triggered\n" \
+                                 "4 ro: complete\n" \
+                                 "5 rw: read buffer\n" \
+                                 "6 rw: DAQ mode")
+
 
 //-------------------------------------------------------------------------------------------------
 //  Local prototypes
@@ -197,7 +207,7 @@ const uint32_t access_secrets[] = {USER_ACCESS_SECRET, SERVICE_ACCESS_SECRET, PR
  */
 bool_t Parameter_EntryIsAccessible(const parameter_table_entry_t * parameter_table_entry)
 {
-  return (Parameter_Data.access_level >= (parameter_table_entry->flags & LEVEL_MASK) >> LEVEL_SHIFT);
+  return( Parameter_Data.access_level >= (parameter_table_entry->flags & LEVEL_MASK) );
 }
 
 
@@ -310,7 +320,7 @@ error_code_t Parameter_SysCmdFunction(parameter_function_t parameter_function, i
         error_code = Parameter_Init();
         break;
       case 3:
-        if( Parameter_Data.access_level >= ((LEVEL_3 & LEVEL_MASK) >> LEVEL_SHIFT) )
+        if( Parameter_Data.access_level >= (LEVEL_3 & LEVEL_MASK) )
           error_code = Parameter_LoadDefaultData();
         else
           error_code = PARAMETER_ACCESS_DENIED;
@@ -339,33 +349,32 @@ error_code_t Parameter_SysCmdFunction(parameter_function_t parameter_function, i
  */
 const parameter_table_entry_t System_Parameter_table[] = {
   //                           name         unit            representation       control flags         minimum     nominal         maximum                 function pointer   information/help
-  [ESTL_PARAM_SYS_INFO]    = {"sys-info",   UNIT_NONE,            REPR_HEX,  LEVEL_0|R_O|NVMEM,      INT32_MIN, PAR_REV_NR,      INT32_MAX,      &Parameter_SysInfoFunction,  SERVICE_HELP_STR},
-  [ESTL_PARAM_SYS_KEY]     = {"sys-key",    UNIT_NONE,            REPR_DEC,  LEVEL_0|R_W|NVMEM,      INT32_MIN,          0,      INT32_MAX,       &Parameter_SysKeyFunction,  "Parameter access key. The current value represents the access level."},
-  [ESTL_PARAM_SYS_CMD]     = {"sys-cmd",    UNIT_NONE,            REPR_HEX,  LEVEL_0|R_W,            INT32_MIN,          0,      INT32_MAX,       &Parameter_SysCmdFunction,  SYSTEM_CMD_HELP_STR},
+  [ESTL_PARAM_SYS_INFO]    = {"sys-info",   UNIT_NONE,            REPR_HEX,  LEVEL_0|R_O|NVMEM,      INT32_MIN, PAR_REV_NR,      INT32_MAX,      &Parameter_SysInfoFunction,  HELP_TEXT(SERVICE_HELP_STR)},
+  [ESTL_PARAM_SYS_KEY]     = {"sys-key",    UNIT_NONE,            REPR_DEC,  LEVEL_0|R_W|NVMEM,      INT32_MIN,          0,      INT32_MAX,       &Parameter_SysKeyFunction,  HELP_TEXT("Parameter access key. The current value represents the access level.")},
+  [ESTL_PARAM_SYS_CMD]     = {"sys-cmd",    UNIT_NONE,            REPR_HEX,  LEVEL_0|R_W,            INT32_MIN,          0,      INT32_MAX,       &Parameter_SysCmdFunction,  HELP_TEXT(SYSTEM_CMD_HELP_STR)},
 #ifdef ESTL_ENABLE_RF
   // radio frequency
-  [ESTL_PARAM_RF_FREQ]     = {"RF-freq",    UNIT_MEG_HERTZ,     REPR_Q15_4,  LEVEL_1|R_W|NVMEM,     Q15(863.0), Q15(868.0),     Q15(870.0),    &RfApp_FreqParameterFunction,  "Transmitter frequency."},
-  [ESTL_PARAM_RF_NODEID]   = {"RF-nodeID",  UNIT_NONE,            REPR_DEC,  LEVEL_1|R_W|NVMEM,              0,          0,            254,  &RfApp_NodeIdParameterFunction,  "Node ID"},
-  [ESTL_PARAM_RF_NETID]    = {"RF-netID",   UNIT_NONE,            REPR_DEC,  LEVEL_1|R_W|NVMEM,              0,          0,            255,   &RfApp_NetIdParameterFunction,  "Network ID"},
-  [ESTL_PARAM_RF_AESKEY_1] = {"RF-AES1",    UNIT_NONE,            REPR_HEX,  LEVEL_1|R_W|NVMEM,      INT32_MIN,          0,      INT32_MAX,     &RfApp_AesParameterFunction,  "AES key for RF-link. Encryption is disabled if all AES-keys are 0."},
-  [ESTL_PARAM_RF_AESKEY_2] = {"RF-AES2",    UNIT_NONE,            REPR_HEX,  LEVEL_1|R_W|NVMEM,      INT32_MIN,          0,      INT32_MAX,     &RfApp_AesParameterFunction,  "AES key for RF-link. Encryption is disabled if all AES-keys are 0."},
-  [ESTL_PARAM_RF_AESKEY_3] = {"RF-AES3",    UNIT_NONE,            REPR_HEX,  LEVEL_1|R_W|NVMEM,      INT32_MIN,          0,      INT32_MAX,     &RfApp_AesParameterFunction,  "AES key for RF-link. Encryption is disabled if all AES-keys are 0."},
-  [ESTL_PARAM_RF_AESKEY_4] = {"RF-AES4",    UNIT_NONE,            REPR_HEX,  LEVEL_1|R_W|NVMEM,      INT32_MIN,          0,      INT32_MAX,     &RfApp_AesParameterFunction,  "AES key for RF-link. Encryption is disabled if all AES-keys are 0."},
+  [ESTL_PARAM_RF_FREQ]     = {"RF-freq",    UNIT_MEG_HERTZ,     REPR_Q15_4,  LEVEL_1|R_W|NVMEM,     Q15(863.0), Q15(868.0),     Q15(870.0),    &RfApp_FreqParameterFunction,  HELP_TEXT("Transmitter frequency.")},
+  [ESTL_PARAM_RF_NODEID]   = {"RF-nodeID",  UNIT_NONE,            REPR_DEC,  LEVEL_1|R_W|NVMEM,              0,          0,            254,  &RfApp_NodeIdParameterFunction,  HELP_TEXT("Node ID")},
+  [ESTL_PARAM_RF_NETID]    = {"RF-netID",   UNIT_NONE,            REPR_DEC,  LEVEL_1|R_W|NVMEM,              0,          0,            255,   &RfApp_NetIdParameterFunction,  HELP_TEXT("Network ID")},
+  [ESTL_PARAM_RF_AESKEY_1] = {"RF-AES1",    UNIT_NONE,            REPR_HEX,  LEVEL_1|R_W|NVMEM,      INT32_MIN,          0,      INT32_MAX,     &RfApp_AesParameterFunction,  HELP_TEXT("AES key for RF-link. Encryption is disabled if all AES-keys are 0.")},
+  [ESTL_PARAM_RF_AESKEY_2] = {"RF-AES2",    UNIT_NONE,            REPR_HEX,  LEVEL_1|R_W|NVMEM,      INT32_MIN,          0,      INT32_MAX,     &RfApp_AesParameterFunction,  HELP_TEXT("AES key for RF-link. Encryption is disabled if all AES-keys are 0.")},
+  [ESTL_PARAM_RF_AESKEY_3] = {"RF-AES3",    UNIT_NONE,            REPR_HEX,  LEVEL_1|R_W|NVMEM,      INT32_MIN,          0,      INT32_MAX,     &RfApp_AesParameterFunction,  HELP_TEXT("AES key for RF-link. Encryption is disabled if all AES-keys are 0.")},
+  [ESTL_PARAM_RF_AESKEY_4] = {"RF-AES4",    UNIT_NONE,            REPR_HEX,  LEVEL_1|R_W|NVMEM,      INT32_MIN,          0,      INT32_MAX,     &RfApp_AesParameterFunction,  HELP_TEXT("AES key for RF-link. Encryption is disabled if all AES-keys are 0.")},
 #endif
 #ifdef ESTL_ENABLE_DEBUG
   // debug
-  [ESTL_PARAM_D_INDEX]     = {"d-index",    UNIT_NONE,            REPR_DEC,  LEVEL_3|R_W|HIDE|INFO,  DEBUG_MIN,  DEBUG_MIN,      DEBUG_MAX,   &Debug_IndexParameterFunction,  "The selected channel of the debug module"},
-  [ESTL_PARAM_D_ADDR]      = {"d-addr",     UNIT_NONE,            REPR_HEX,  LEVEL_3|R_W|HIDE,       INT32_MIN,          0,      INT32_MAX,    &Debug_AddrParameterFunction,  "The physical address that should be accessed.\nIf mask is 0, then this is the index of the debug lookup-table."},
-  [ESTL_PARAM_D_MASK]      = {"d-mask",     UNIT_NONE,            REPR_HEX,  LEVEL_3|R_W|HIDE,       INT32_MIN,          0,      INT32_MAX,    &Debug_MaskParameterFunction,  "This masks the variable's access."},
-  [ESTL_PARAM_D_TYPE]      = {"d-type",     UNIT_NONE,            REPR_DEC,  LEVEL_3|R_W|HIDE,               0,          0,  NR_OF_REPRS-1,    &Debug_ReprParameterFunction,  "Representation of the variable."},
-  [ESTL_PARAM_D_DATA]      = {"d-data",     UNIT_NONE,            REPR_DEC,  LEVEL_3|R_W|HIDE,       INT32_MIN,          0,      INT32_MAX,    &Debug_DataParameterFunction,  "Access the variable.\nIf mask is 0, then the content of the debug lookup-table will be read."},
+  [ESTL_PARAM_D_INDEX]     = {"d-index",    UNIT_NONE,            REPR_DEC,  LEVEL_2|R_W|HIDE|INFO,  DEBUG_MIN,  DEBUG_MIN,      DEBUG_MAX,   &Debug_IndexParameterFunction,  HELP_TEXT("The selected channel of the debug module")},
+  [ESTL_PARAM_D_ADDR]      = {"d-addr",     UNIT_NONE,            REPR_HEX,  LEVEL_2|R_W|HIDE,       INT32_MIN,          0,      INT32_MAX,    &Debug_AddrParameterFunction,  HELP_TEXT("The physical address that should be accessed.\nIf mask is 0, then this is the index of the debug lookup-table.")},
+  [ESTL_PARAM_D_MASK]      = {"d-mask",     UNIT_NONE,            REPR_HEX,  LEVEL_2|R_W|HIDE,       INT32_MIN,          0,      INT32_MAX,    &Debug_MaskParameterFunction,  HELP_TEXT("This masks the variable's access.")},
+  [ESTL_PARAM_D_DATA]      = {"d-data",     UNIT_NONE,            REPR_DEC,  LEVEL_2|R_W|HIDE,       INT32_MIN,          0,      INT32_MAX,    &Debug_DataParameterFunction,  HELP_TEXT("Access the variable.\nIf mask is 0, then the content of the debug lookup-table will be read.")},
 #endif
 #if( defined(ESTL_ENABLE_SCOPE) && defined(ESTL_ENABLE_DEBUG) )
-  [ESTL_PARAM_S_CMD]       = {"s-cmd",      UNIT_NONE,            REPR_DEC,  LEVEL_3|R_W|HIDE,               0,          0,              3,     &Scope_CmdParameterFunction,  "Scope command:\n0: stop\n1: start/armed\n2: ready\n3: triggered\n4: complete"},
-  [ESTL_PARAM_S_DIV]       = {"s-div",      UNIT_NONE,            REPR_DEC,  LEVEL_3|R_W|HIDE|INFO,          1,          1,     UINT16_MAX,   &Scope_SetupParameterFunction,  "Sample divider - save every nth sample."},
-  [ESTL_PARAM_S_PRE]       = {"s-pre",      UNIT_PERCENT,         REPR_DEC,  LEVEL_3|R_W|HIDE|INFO,          0,          0,            100,   &Scope_SetupParameterFunction,  "Pre-trigger buffer size."},
-  [ESTL_PARAM_S_TRIGC]     = {"s-trigc",    UNIT_NONE,            REPR_DEC,  LEVEL_3|R_W|HIDE|INFO, -DEBUG_MAX,          0,      DEBUG_MAX,   &Scope_SetupParameterFunction,  "Trigger channel, where the sign represents the trigger-edge."},
-  [ESTL_PARAM_S_TRIGL]     = {"s-trigl",    UNIT_NONE,            REPR_DEC,  LEVEL_3|R_W|HIDE,       INT32_MIN,          0,      INT32_MAX,   &Scope_SetupParameterFunction,  "Trigger level."},
+  [ESTL_PARAM_S_CMD]       = {"s-cmd",      UNIT_NONE,            REPR_DEC,  LEVEL_2|R_W|HIDE,       INT32_MIN,          0,      INT32_MAX,     &Scope_CmdParameterFunction,  HELP_TEXT(SCOPE_HELP_STR)},
+  [ESTL_PARAM_S_DIV]       = {"s-div",      UNIT_NONE,            REPR_DEC,  LEVEL_2|R_W|HIDE|INFO,          1,          1,     UINT16_MAX,   &Scope_SetupParameterFunction,  HELP_TEXT("Sample divider - save every nth sample.")},
+  [ESTL_PARAM_S_PRE]       = {"s-pre",      UNIT_PERCENT,         REPR_DEC,  LEVEL_2|R_W|HIDE|INFO,          0,          0,            100,   &Scope_SetupParameterFunction,  HELP_TEXT("Pre-trigger buffer size.")},
+  [ESTL_PARAM_S_TRIGC]     = {"s-trigc",    UNIT_NONE,            REPR_DEC,  LEVEL_2|R_W|HIDE|INFO, -DEBUG_MAX,          0,      DEBUG_MAX,   &Scope_SetupParameterFunction,  HELP_TEXT("Trigger channel, where the sign represents the trigger-edge.")},
+  [ESTL_PARAM_S_TRIGL]     = {"s-trigl",    UNIT_NONE,            REPR_DEC,  LEVEL_2|R_W|HIDE,       INT32_MIN,          0,      INT32_MAX,   &Scope_SetupParameterFunction,  HELP_TEXT("Trigger level.")},
 #endif
 };
 
@@ -388,6 +397,12 @@ int32_t Parameter_array[SYSTEM_PARAMETER_TABLE_NR_OF_ENTRIES + NR_OF_PARAMETER_T
 //-------------------------------------------------------------------------------------------------
 //  parameter access functions
 //-------------------------------------------------------------------------------------------------
+
+inline bool_t Parameter_CurrentAccessLevelIsDeveloper(void)
+{
+  return (LEVEL_4 & LEVEL_MASK) == Parameter_Data.access_level;
+}
+
 
 inline range_t Parameter_GetIndexRange(void)
 {
@@ -548,27 +563,11 @@ error_code_t Parameter_ReadData(int16_t parameter_index, parameter_data_t * para
 
   parameter_data->name    = parameter_table_entry->name;
   parameter_data->unit    = parameter_table_entry->unit;
-#ifdef ESTL_ENABLE_DEBUG
-  // override data type in case of Debug data
-  if( parameter_index == (-ESTL_PARAM_D_DATA - 1) )
-  {
-    int32_t repr;
-    Debug_ReprParameterFunction( PARAMETER_READ, &repr);
-    parameter_data->repr = (repr_t)repr;
-  }
-  else
-    parameter_data->repr    = parameter_table_entry->repr;
-#else
   parameter_data->repr    = parameter_table_entry->repr;
-#endif
   parameter_data->flags   = parameter_table_entry->flags;
   parameter_data->nominal = parameter_table_entry->nominal;
   parameter_data->minimum = parameter_table_entry->minimum;
   parameter_data->maximum = parameter_table_entry->maximum;
-//  parameter_data->help    = parameter_table_entry->help;
-//  if (parameter_table_entry->parameterFunction != 0)
-//    error = parameter_table_entry->parameterFunction( PARAMETER_READ, &(Parameter_array[SYSTEM_PARAMETER_TABLE_NR_OF_ENTRIES + parameter_index]) );
-//  parameter_data->value   = Parameter_array[SYSTEM_PARAMETER_TABLE_NR_OF_ENTRIES + parameter_index];
   if( (! Parameter_EntryIsAccessible(parameter_table_entry)) && (parameter_table_entry->flags & HIDE) )
     return PARAMETER_HIDDEN;
   return error;
@@ -648,6 +647,7 @@ uint16_t Parameter_NvEntryCrc(const parameter_table_entry_t * parameter_table_en
  *   @retval  PARAMETER_REV_MINOR_CHANGE  Minor change in parameter revision.
  *   @retval  PARAMETER_REV_MAJOR_CHANGE  Major change in parameter revision.
  *   @retval  PARAMETER_ENUM_MISMATCH     Something is wrong in application's parameter table.
+ *   @retval  PARAMETER_CONTENT_CHANGE
  *   @retval  STORAGE_NOT_INITIALIZED
  *   @retval  STORAGE_ENUM_MISMATCH
  *   @retval  STORAGE_INDEX_MISMATCH
@@ -664,7 +664,7 @@ error_code_t Parameter_LoadNvData(void)
   int16_t i;
   uint16_t nvmem_index = 0;
   error_code_t init_status = OK;
-  uint8_t content_changed = 0;
+  bool_t is_content_changed = FALSE;
 
   // load and check data from non volatile memory
   storage_size = Storage_Read(STORAGE_PARAMETER_IMAGE, (uint8_t*)(nv_parameter_entry), sizeof(nv_parameter_entry));
@@ -684,7 +684,7 @@ error_code_t Parameter_LoadNvData(void)
       while( (i > nv_parameter_entry[nvmem_index].index) && (nvmem_index < number_of_nv_entries) )
       {
         nvmem_index ++;
-        content_changed = 1;
+        is_content_changed = TRUE;
       }
 
       if( (nv_parameter_entry[nvmem_index].index == i) && (nvmem_index < number_of_nv_entries) )
@@ -698,21 +698,19 @@ error_code_t Parameter_LoadNvData(void)
       {
         // non-volatile entry not found, load nominal value
         value = parameter_table_entry->nominal;
-        content_changed = 1;
+        is_content_changed = TRUE;
       }
     }
     else
     {
       // load nominal value
       value = parameter_table_entry->nominal;
-      if( parameter_table_entry->flags & NVMEM )
-        content_changed = 1;
     }
     // copy value to parameter array
     Parameter_array[SYSTEM_PARAMETER_TABLE_NR_OF_ENTRIES + i] = value;
 
-    // check if parameter function needs to be called
-    if (parameter_table_entry->parameterFunction != 0)
+    // check if parameter function is available and call it
+    if( parameter_table_entry->parameterFunction != 0 )
     {
       error_code_t error;
       error = parameter_table_entry->parameterFunction(PARAMETER_INIT, &Parameter_array[SYSTEM_PARAMETER_TABLE_NR_OF_ENTRIES + i]);
@@ -738,7 +736,7 @@ error_code_t Parameter_LoadNvData(void)
 
 //  Parameter_data.init_status = init_status;
 //  return Parameter_data.init_status;
-  if( content_changed && (OK == init_status) )
+  if( is_content_changed && (OK == init_status) )
     return PARAMETER_CONTENT_CHANGE;
   return init_status;
 #else
