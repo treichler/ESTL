@@ -55,6 +55,8 @@ typedef enum {
   UNIT_KELVIN,
   UNIT_M_SECOND,                //!<  Time
   UNIT_SECOND,
+  UNIT_MINUTE,
+  UNIT_HOUR,
   UNIT_HERTZ,                   //!<  Frequency
   UNIT_K_HERTZ,
   UNIT_MEG_HERTZ,

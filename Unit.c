@@ -49,6 +49,8 @@ const char * Unit_GetString(unit_t unit)
     [UNIT_KELVIN]               = "K",
     [UNIT_M_SECOND]             = "ms",
     [UNIT_SECOND]               = "s",
+    [UNIT_MINUTE]               = "min",
+    [UNIT_HOUR]                 = "h",
     [UNIT_HERTZ]                = "Hz",
     [UNIT_K_HERTZ]              = "kHz",
     [UNIT_MEG_HERTZ]            = "MHz",

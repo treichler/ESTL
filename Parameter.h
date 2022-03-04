@@ -103,7 +103,6 @@ enum {
   ESTL_PARAM_D_INDEX,                        //!< debug set index
   ESTL_PARAM_D_ADDR,                         //!< debug address at specified index
   ESTL_PARAM_D_MASK,                         //!< mask the debug variable
-  ESTL_PARAM_D_TYPE,                         //!< representation of the variable
   ESTL_PARAM_D_DATA,                         //!< access the debug variable
 #endif
 #if( defined(ESTL_ENABLE_SCOPE) && defined(ESTL_ENABLE_DEBUG) )
@@ -135,7 +134,6 @@ enum {
   PARAM_D_INDEX          = (-1 - ESTL_PARAM_D_INDEX),
   PARAM_D_ADDR           = (-1 - ESTL_PARAM_D_ADDR),
   PARAM_D_MASK           = (-1 - ESTL_PARAM_D_MASK),
-  PARAM_D_TYPE           = (-1 - ESTL_PARAM_D_TYPE),
   PARAM_D_DATA           = (-1 - ESTL_PARAM_D_DATA),
 #endif
 #if( defined(ESTL_ENABLE_SCOPE) && defined(ESTL_ENABLE_DEBUG) )

@@ -382,7 +382,7 @@ uint8_t Parameter_CANopen_CallbackSdoReq( uint8_t length_req, uint8_t *req_ptr, 
         resp_ptr[0] = 0x80;
         // map parameter access error to SDO pseudo abort code
         resp_ptr[4] = (uint8_t)error_code;
-        resp_ptr[5] = (uint8_t)((uint16_t)error_code >> 8);
+        resp_ptr[5] = (uint8_t)(((uint16_t)error_code) >> 8);
         resp_ptr[6] = (PSEUDO_SDO_ABORT_CODE >> 16) & 0xFF;
         resp_ptr[7] = (PSEUDO_SDO_ABORT_CODE >> 24) & 0xFF;
       }

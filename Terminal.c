@@ -58,6 +58,8 @@ struct {
   uint8_t can_open_buffer[ESTL_TERMINAL_REMOTE_PARAMETER_BUFFER_SIZE]; // this buffer needs to be aligned to 32-bit address
   uint32_t table_crc;
   range_t can_open_index_range;
+  scope_pdo_sample_t * scope_pdo_sample;
+  bool_t scope_pdo_has_new_sample;
   uint8_t node_id;
   bool_t  is_remote;
 #endif
@@ -66,9 +68,6 @@ struct {
   uint16_t last_daq_index;
   uint16_t scope_sample_index;
   scope_sample_t * scope_sample;
-
-  scope_pdo_sample_t * scope_pdo_sample;
-  bool_t scope_pdo_has_new_sample;
 } Terminal_Data;
 
 
@@ -81,9 +80,9 @@ void Terminal_ParameterNotFoundMessage( const terminal_t * terminal, char *rx_bu
 void Terminal_PrintErrorMessage( const terminal_t * terminal, error_code_t error );
 bool_t Terminal_PrintScope( uint16_t index, scope_sample_t * scope_sample );
 
-bool_t Terminal_PrintPdoScope( scope_pdo_sample_t * scope_pdo_sample );
 
 #if( defined(ESTL_ENABLE_TERMINAL_REMOTE_PARAMETER) )
+bool_t Terminal_PrintPdoScope( scope_pdo_sample_t * scope_pdo_sample );
 error_code_t Terminal_InitCanOpenTable( uint8_t node_id );
 int16_t Terminal_CanOpenFindIndexByName( char * parameter_name );
 #endif
@@ -508,6 +507,7 @@ bool_t Terminal_PrintScope( uint16_t index, scope_sample_t * scope_sample )
 }
 
 
+#if( defined(ESTL_ENABLE_TERMINAL_REMOTE_PARAMETER) )
 bool_t Terminal_PrintPdoScope( scope_pdo_sample_t * scope_pdo_sample )
 {
   if( Terminal_Data.scope_pdo_has_new_sample )
@@ -518,8 +518,6 @@ bool_t Terminal_PrintPdoScope( scope_pdo_sample_t * scope_pdo_sample )
   return TRUE;
 }
 
-
-#if( defined(ESTL_ENABLE_TERMINAL_REMOTE_PARAMETER) )
 
 /**
  * Initialize the parameter table of a device which is connected via CANopen.

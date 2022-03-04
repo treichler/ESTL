@@ -200,7 +200,7 @@ const uint32_t access_secrets[] = {USER_ACCESS_SECRET, SERVICE_ACCESS_SECRET, PR
 
 /**
  * Check if a parameter entry is accessible due to access level.
- * @param[in]  parameter_data           Pointer to the parameter_table_entry.
+ * @param[in]  parameter_table_entry    Pointer to the parameter_table_entry.
  * @return                              Accessibility of parameter entry
  *   @retval   TRUE                     Parameter is accessible
  *   @retval   FALSE                    Parameter is not accessible
@@ -349,7 +349,7 @@ error_code_t Parameter_SysCmdFunction(parameter_function_t parameter_function, i
  */
 const parameter_table_entry_t System_Parameter_table[] = {
   //                           name         unit            representation       control flags         minimum     nominal         maximum                 function pointer   information/help
-  [ESTL_PARAM_SYS_INFO]    = {"sys-info",   UNIT_NONE,            REPR_HEX,  LEVEL_0|R_O|NVMEM,      INT32_MIN, PAR_REV_NR,      INT32_MAX,      &Parameter_SysInfoFunction,  HELP_TEXT(SERVICE_HELP_STR)},
+  [ESTL_PARAM_SYS_INFO]    = {"sys-info",   UNIT_NONE,            REPR_HEX,  LEVEL_0|R_O|NVMEM,      INT32_MIN, PAR_REV_NR,      INT32_MAX,      &Parameter_SysInfoFunction,  SERVICE_HELP_STR},
   [ESTL_PARAM_SYS_KEY]     = {"sys-key",    UNIT_NONE,            REPR_DEC,  LEVEL_0|R_W|NVMEM,      INT32_MIN,          0,      INT32_MAX,       &Parameter_SysKeyFunction,  HELP_TEXT("Parameter access key. The current value represents the access level.")},
   [ESTL_PARAM_SYS_CMD]     = {"sys-cmd",    UNIT_NONE,            REPR_HEX,  LEVEL_0|R_W,            INT32_MIN,          0,      INT32_MAX,       &Parameter_SysCmdFunction,  HELP_TEXT(SYSTEM_CMD_HELP_STR)},
 #ifdef ESTL_ENABLE_RF
@@ -367,7 +367,7 @@ const parameter_table_entry_t System_Parameter_table[] = {
   [ESTL_PARAM_D_INDEX]     = {"d-index",    UNIT_NONE,            REPR_DEC,  LEVEL_2|R_W|HIDE|INFO,  DEBUG_MIN,  DEBUG_MIN,      DEBUG_MAX,   &Debug_IndexParameterFunction,  HELP_TEXT("The selected channel of the debug module")},
   [ESTL_PARAM_D_ADDR]      = {"d-addr",     UNIT_NONE,            REPR_HEX,  LEVEL_2|R_W|HIDE,       INT32_MIN,          0,      INT32_MAX,    &Debug_AddrParameterFunction,  HELP_TEXT("The physical address that should be accessed.\nIf mask is 0, then this is the index of the debug lookup-table.")},
   [ESTL_PARAM_D_MASK]      = {"d-mask",     UNIT_NONE,            REPR_HEX,  LEVEL_2|R_W|HIDE,       INT32_MIN,          0,      INT32_MAX,    &Debug_MaskParameterFunction,  HELP_TEXT("This masks the variable's access.")},
-  [ESTL_PARAM_D_DATA]      = {"d-data",     UNIT_NONE,            REPR_DEC,  LEVEL_2|R_W|HIDE,       INT32_MIN,          0,      INT32_MAX,    &Debug_DataParameterFunction,  HELP_TEXT("Access the variable.\nIf mask is 0, then the content of the debug lookup-table will be read.")},
+  [ESTL_PARAM_D_DATA]      = {"d-data",     UNIT_NONE,            REPR_HEX,  LEVEL_2|R_W|HIDE,       INT32_MIN,          0,      INT32_MAX,    &Debug_DataParameterFunction,  HELP_TEXT("Access the variable.\nIf mask is 0, then the content of the debug lookup-table will be read.")},
 #endif
 #if( defined(ESTL_ENABLE_SCOPE) && defined(ESTL_ENABLE_DEBUG) )
   [ESTL_PARAM_S_CMD]       = {"s-cmd",      UNIT_NONE,            REPR_DEC,  LEVEL_2|R_W|HIDE,       INT32_MIN,          0,      INT32_MAX,     &Scope_CmdParameterFunction,  HELP_TEXT(SCOPE_HELP_STR)},
@@ -624,7 +624,6 @@ uint32_t Parameter_TableEntryCrc(const parameter_table_entry_t * parameter_table
  * entry and related parameter table entry
  *
  * @param[in]  parameter_table_entry  Pointer to parameter table entry structure
- * @param[in]  previous_crc           Previously calculated CRC
  * @return                            The calculated CRC
  */
 uint16_t Parameter_NvEntryCrc(const parameter_table_entry_t * parameter_table_entry)

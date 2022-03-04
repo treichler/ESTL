@@ -192,10 +192,10 @@ bool_t Sdo_SegRead( uint8_t node_id, uint16_t index, uint8_t subindex, void* buf
   if( Sdo_data.is_initialized && Sdo_data.SdoIsAvailableFunction() && \
       ((SDO_REQ_SUCCESS == Sdo_data.req_state) || (SDO_REQ_FAIL == Sdo_data.req_state)) )
   {
-    Sdo_data.req_state          = SDO_REQ_SEG_READ_BUSY;
-    Sdo_data.resp_buffer          = buff;
+    Sdo_data.req_state       = SDO_REQ_SEG_READ_BUSY;
+    Sdo_data.resp_buffer     = buff;
     Sdo_data.seg_buffer_size = buff_size;
-    Sdo_data.seg_id        = node_id;
+    Sdo_data.seg_id          = node_id;
 
     Sdo_data.req_data[0] = 0x40;
     Sdo_data.req_data[1] = index & 0xFF;
