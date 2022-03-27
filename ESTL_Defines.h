@@ -92,6 +92,17 @@
 
 
 /**
+ * @name  Line break
+ * @brief Terminal's line break options
+ * @{
+ */
+#define ESTL_TERMINAL_LINE_BREAK_LF     (1)     //!<  Line feed
+#define ESTL_TERMINAL_LINE_BREAK_CR     (2)     //!<  Carriage return
+#define ESTL_TERMINAL_LINE_BREAK_CRLF   (3)     //!<  Carriage return and line feed
+/** @} */
+
+
+/**
  * @} end of ESTL
  */
 

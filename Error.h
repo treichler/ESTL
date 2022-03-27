@@ -57,12 +57,16 @@ typedef enum {
   ABOVE_LIMIT,                  //!<  Value is above its defined limit
   VALUE_INVALID,                //!<  Value is invalid
   VALUE_UNAVAILABLE,            //!<  Value is unavailable
-  NOT_INITIALIZED,              //!<  Call to an uninitialized module's function
+  FUNCTION_CALL_FAILED,         //!<  Function call failed
   FUNCTION_UNAVAILABLE,         //!<  Function is unavailable
+  NOT_INITIALIZED,              //!<  Call to an uninitialized module's function
   NOT_ACCESSIBLE,               //!<  Desired resource is not accessible
   TIMEOUT,                      //!<  A general timeout occurred
   RESOURCE_BUSY,                //!<  The requested resource is currently busy
   BUFFER_TOO_SMALL,             //!<  Buffer is too small
+
+  FLASH_WRITE_ERROR,            //!<  FLASH write error
+  FLASH_ERASE_ERROR,            //!<  FLASH erase error
 
   STORAGE_NOT_INITIALIZED,      //!<  Storage module is not initialized
   STORAGE_ENUM_MISMATCH,        //!<  Number of entries in storage and enumerator do not match
@@ -70,19 +74,16 @@ typedef enum {
   STORAGE_NVMEM_TOO_SMALL,      //!<  Non-volatile memory is too small
   STORAGE_INDEX_MISMATCH,       //!<  Index in storage table and NV-memory do not match
   STORAGE_DATA_TOO_BIG,         //!<  Data does not fit into reserved non-volatile memory area
-  STORAGE_NOT_ACCESSIBLE,       //!<  Data is not accessible
+  STORAGE_DATA_UNAVAILABLE,     //!<  The requested data is not available
 
   PARAMETER_STORAGE_MISSING,    //!<  Parameter storage is missing
   PARAMETER_WRITE_PROTECTED,    //!<  Accessing write protected parameter value
   PARAMETER_ACCESS_DENIED,      //!<  Access is denied due to wrong access level
   PARAMETER_HIDDEN,             //!<  Parameter is hidden due to wrong access level
-  PARAMETER_KEY_COLLISION,      //!<  Secret creates key collision
   PARAMETER_ENUM_MISMATCH,      //!<  Number of entries in parameter and enumerator do not match
   PARAMETER_CONTENT_CHANGE,     //!<  Content has changed due to new or gone non-volatile parameter
   PARAMETER_REV_MINOR_CHANGE,   //!<  Minor revision in parameter image has changed
   PARAMETER_REV_MAJOR_CHANGE,   //!<  Major revision in parameter image has changed
-  PARAMETER_INDEX_MISMATCH,     //!<  Index in parameter table and NV-memory do not match
-  PARAMETER_ENTRIES_MISMATCH,   //!<  Number of non-volatile parameter entries does not match non-volatile data
 
   DISPLAY_NO_CONTENT,           //!<  There is nothing to be displayed
   DISPLAY_CONTENT_TOO_LONG,     //!<  The content to be displayed is too long

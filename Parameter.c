@@ -244,7 +244,8 @@ error_code_t Parameter_SysKeyFunction(parameter_function_t parameter_function, i
   // Otherwise value contains the current access level.
   if( parameter_function == PARAMETER_SAVE )
   {
-    if( 0 == Parameter_Data.access_level )
+    // only save developer access key
+    if( (LEVEL_4 & LEVEL_MASK) > Parameter_Data.access_level )
       *value = 0;
     else
       *value = (int32_t)Parameter_Data.access_secret;
@@ -398,13 +399,13 @@ int32_t Parameter_array[SYSTEM_PARAMETER_TABLE_NR_OF_ENTRIES + NR_OF_PARAMETER_T
 //  parameter access functions
 //-------------------------------------------------------------------------------------------------
 
-inline bool_t Parameter_CurrentAccessLevelIsDeveloper(void)
+bool_t Parameter_CurrentAccessLevelIsDeveloper(void)
 {
   return (LEVEL_4 & LEVEL_MASK) == Parameter_Data.access_level;
 }
 
 
-inline range_t Parameter_GetIndexRange(void)
+range_t Parameter_GetIndexRange(void)
 {
   const range_t parameter_index_range = {
       .min = (int16_t)(-SYSTEM_PARAMETER_TABLE_NR_OF_ENTRIES),
@@ -421,7 +422,7 @@ bool_t Parameter_IndexExists(int16_t parameter_index)
 }
 
 
-inline uint32_t Parameter_GetTableCrc(void)
+uint32_t Parameter_GetTableCrc(void)
 {
   return Parameter_Data.table_crc;
 }
@@ -666,7 +667,7 @@ error_code_t Parameter_LoadNvData(void)
   bool_t is_content_changed = FALSE;
 
   // load and check data from non volatile memory
-  storage_size = Storage_Read(STORAGE_PARAMETER_IMAGE, (uint8_t*)(nv_parameter_entry), sizeof(nv_parameter_entry));
+  storage_size = Storage_Read(STORAGE_PARAMETER_IMAGE, nv_parameter_entry, sizeof(nv_parameter_entry));
   if( storage_size < 0 )
     return (error_code_t)storage_size;
   number_of_nv_entries = storage_size / sizeof(nv_parameter_entry_t);
@@ -775,7 +776,7 @@ error_code_t Parameter_Init(void)
   const parameter_table_entry_t * parameter_table_entry = 0;
 
   // calculate parameter table CRC for identification
-  Parameter_Data.table_crc = 0xFFFFFFFF;
+  Parameter_Data.table_crc = 0;
   for( i = -(int16_t)SYSTEM_PARAMETER_TABLE_NR_OF_ENTRIES; i < NR_OF_PARAMETER_TABLE_ENTRIES; i++ )
   {
     Parameter_GetEntry(&parameter_table_entry, i);

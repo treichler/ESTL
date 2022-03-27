@@ -68,12 +68,6 @@ struct {
 } Sdo_data;
 
 
-/**
- * Initialize SDO request data.
- * SDO expects that Sdo_Init() caller provides a static request data buffer
- * which consists of an 8-byte array. It is also expected that this particular
- * array is exclusively used for SDO requests only.
- */
 bool_t Sdo_Init( uint8_t * req_data, bool_t (* SdoRequestFunction)(uint8_t), bool_t (* SdoIsAvailableFunction)(void), uint8_t nr_of_nodes )
 {
   if( req_data && SdoRequestFunction && SdoIsAvailableFunction )
@@ -102,31 +96,31 @@ void Sdo_1msTask(void)
 }
 
 
-inline bool_t Sdo_ReqIsBusy( void )
+bool_t Sdo_ReqIsBusy( void )
 {
   return ! ((SDO_REQ_SUCCESS == Sdo_data.req_state) || (SDO_REQ_FAIL == Sdo_data.req_state));
 }
 
 
-inline bool_t Sdo_ReqIsFinished( void )
+bool_t Sdo_ReqIsFinished( void )
 {
   return SDO_REQ_SUCCESS == Sdo_data.req_state;
 }
 
 
-inline uint32_t Sdo_GetAbortCode( void )
+uint32_t Sdo_GetAbortCode( void )
 {
   return Sdo_data.abort_code;
 }
 
 
-inline uint8_t Sdo_GetNrOfNodes( void )
+uint8_t Sdo_GetNrOfNodes( void )
 {
   return Sdo_data.nr_of_nodes;
 }
 
 
-inline void Sdo_SetNrOfNodes( uint8_t nr_of_nodes )
+void Sdo_SetNrOfNodes( uint8_t nr_of_nodes )
 {
   Sdo_data.nr_of_nodes = nr_of_nodes;
 }

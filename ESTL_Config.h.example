@@ -180,8 +180,17 @@
 
 
 //-------------------------------------------------------------------------------------------------
-//  Terminal remote interface
+//  Terminal
 //-------------------------------------------------------------------------------------------------
+
+/**
+ * Select Terminal's line break symbol.
+ * Possible options are:
+ * - ESTL_TERMINAL_LINE_BREAK_LF
+ * - ESTL_TERMINAL_LINE_BREAK_CR
+ * - ESTL_TERMINAL_LINE_BREAK_CRLF
+ */
+#define ESTL_TERMINAL_LINE_BREAK       ESTL_TERMINAL_LINE_BREAK_CR
 
 //#define ESTL_ENABLE_TERMINAL_REMOTE_PARAMETER
 #define ESTL_TERMINAL_REMOTE_PARAMETER_CON_TIMEOUT      (100)   //!< Remote Parameter connection timeout [ms]

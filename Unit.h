@@ -53,7 +53,8 @@ typedef enum {
   UNIT_REL_HUMIDITY,
   UNIT_CELSIUS,                 //!<  Temperature
   UNIT_KELVIN,
-  UNIT_M_SECOND,                //!<  Time
+  UNIT_U_SECOND,                //!<  Time
+  UNIT_M_SECOND,
   UNIT_SECOND,
   UNIT_MINUTE,
   UNIT_HOUR,
@@ -74,6 +75,9 @@ typedef enum {
   UNIT_AMPERE_PER_SECOND,       //!<  Current gradient
   UNIT_M_VOLT,                  //!<  Voltage
   UNIT_VOLT,
+  UNIT_OHM,                     //!<  Impedance
+  UNIT_VOLT_PER_AMPERE,         //!<  Transimpedance
+  UNIT_M_VOLT_PER_AMPERE,
   UNIT_U_METRE,                 //!<  Length/distance
   UNIT_M_METRE,
   UNIT_METRE,

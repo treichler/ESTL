@@ -54,9 +54,9 @@
 //-------------------------------------------------------------------------------------------------
 //  Local prototypes
 //-------------------------------------------------------------------------------------------------
-error_code_t Storage_NvMemRead(uint16_t addr, uint8_t *data, uint16_t size);
-error_code_t Storage_NvMemWrite(uint16_t addr, uint8_t *data, uint16_t size);
-int32_t Storage_GetSize(void);
+static inline error_code_t Storage_NvMemRead(uint16_t addr, uint8_t *data, uint16_t size);
+static inline error_code_t Storage_NvMemWrite(uint16_t addr, uint8_t *data, uint16_t size);
+static inline int32_t Storage_GetSize(void);
 
 
 struct {
@@ -77,17 +77,17 @@ struct {
  * @name Wrapper for external I2C EEprom storage functions
  * @{
  */
-inline error_code_t Storage_NvMemRead(uint16_t addr, uint8_t *data, uint16_t size)
+error_code_t Storage_NvMemRead(uint16_t addr, uint8_t *data, uint16_t size)
 {
   return StorageI2cEeprom_NvMemRead(addr, data, size);
 }
 
-inline error_code_t Storage_NvMemWrite(uint16_t addr, uint8_t *data, uint16_t size)
+error_code_t Storage_NvMemWrite(uint16_t addr, uint8_t *data, uint16_t size)
 {
   return StorageI2cEeprom_NvMemWrite(addr, data, size);
 }
 
-inline int32_t Storage_GetSize(void)
+int32_t Storage_GetSize(void)
 {
   return StorageI2cEeprom_GetSize();
 }
@@ -128,9 +128,9 @@ error_code_t Storage_NvMemRead(uint16_t addr, uint8_t *data, uint16_t size)
  * Storage header
  */
 typedef struct {
-  uint32_t crc32;       //!<  Checksum of the payload
-  uint16_t size;        //!<  Total size of payload without header
-  uint16_t index;       //!<  Storage index where it belongs to
+  uint32_t     crc32;   //!<  Checksum of the payload
+  uint16_t     size;    //!<  Total size of payload without header
+  storage_id_t index;   //!<  Storage index where it belongs to
 } storage_header_t;
 
 
@@ -172,7 +172,7 @@ error_code_t Storage_Init(void)
     Storage_table[i].addr = addr;
     addr += Storage_table[i].size;
   }
-  if( addr >= Storage_GetSize() )
+  if( addr > Storage_GetSize() )
     Storage_data.init_status = STORAGE_NVMEM_TOO_SMALL;
   else
     Storage_data.init_status = OK;
@@ -205,7 +205,8 @@ error_code_t Storage_Write(storage_id_t index, void *data, int16_t size)
     return STORAGE_DATA_TOO_BIG;
   header.index = index;
   header.size = size;
-  header.crc32 = Crc_Crc32(data, size, 0x00000000);
+  uint32_t crc = Crc_Crc32((uint8_t*)(&header) + 4, sizeof(storage_header_t) - 4, 0);
+  header.crc32 = Crc_Crc32(data, size, crc);
   write_status = Storage_NvMemWrite(Storage_table[index].addr, (uint8_t*)(&header), sizeof(header));
   if (OK != write_status)
     return write_status;
@@ -234,7 +235,8 @@ int32_t Storage_Read(storage_id_t index, void *data, int16_t size)
   read_status = Storage_NvMemRead(Storage_table[index].addr + sizeof(header), data, header.size);
   if( OK != read_status )
     return (int32_t)read_status;
-  if( header.crc32 != Crc_Crc32(data, header.size, 0x00000000) )
+  uint32_t crc = Crc_Crc32((uint8_t*)(&header) + 4, sizeof(storage_header_t) - 4, 0);
+  if( header.crc32 != Crc_Crc32(data, header.size, crc) )
     return (int32_t)STORAGE_CRC_MISMATCH;
   return header.size;
 }

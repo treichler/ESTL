@@ -38,15 +38,16 @@
 const char * Unit_GetString(unit_t unit)
 {
 #ifdef ESTL_ENABLE_UNIT_NAMES
-  const char * unit_str[] =
+  static char const * const unit_str[] =
   {
     [UNIT_NONE]                 = "",
     [UNIT_PERCENT]              = "%",
     [UNIT_DECIBEL]              = "dB",
     [UNIT_LUX]                  = "lx",
     [UNIT_REL_HUMIDITY]         = "%RH",
-    [UNIT_CELSIUS]              = "Â°C",
+    [UNIT_CELSIUS]              = "°C",
     [UNIT_KELVIN]               = "K",
+    [UNIT_U_SECOND]             = "µs",
     [UNIT_M_SECOND]             = "ms",
     [UNIT_SECOND]               = "s",
     [UNIT_MINUTE]               = "min",
@@ -67,7 +68,10 @@ const char * Unit_GetString(unit_t unit)
     [UNIT_AMPERE_PER_SECOND]    = "A/s",
     [UNIT_M_VOLT]               = "mV",
     [UNIT_VOLT]                 = "V",
-    [UNIT_U_METRE]              = "Âµm",
+    [UNIT_OHM]                  = "Ohm",
+    [UNIT_VOLT_PER_AMPERE]      = "V/A",
+    [UNIT_M_VOLT_PER_AMPERE]    = "mV/A",
+    [UNIT_U_METRE]              = "µm",
     [UNIT_M_METRE]              = "mm",
     [UNIT_METRE]                = "m",
     [UNIT_K_METRE]              = "km",

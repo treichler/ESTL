@@ -65,7 +65,10 @@ typedef struct {
  *   @retval TRUE   Value fits to range.
  *   @retval FALSE  Value violates range.
  */
-bool_t ValueInRange(int16_t value, range_t range);
+static inline bool_t ValueInRange(int16_t value, range_t range)
+{
+  return ((value >= range.min) && (value <= range.max)) ? TRUE : FALSE;
+}
 
 
 /**
@@ -120,7 +123,10 @@ typedef int32_t q15_t;
  * @param [in] q15      The given q15.16 fixed point value
  * @return              The value's mantissa
  */
-int16_t  q15_GetMantissa(q15_t q15);
+static inline int16_t q15_GetMantissa(q15_t q15)
+{
+  return (int16_t)(q15 >> 16);
+}
 
 
 /**
@@ -128,7 +134,10 @@ int16_t  q15_GetMantissa(q15_t q15);
  * @param [in] q15      The given q15.16 fixed point value
  * @return              The value's fraction
  */
-uint16_t q15_GetFraction(q15_t q15);
+static inline uint16_t q15_GetFraction(q15_t q15)
+{
+  return (uint16_t)(q15 & 0xFFFF);
+}
 
 
 #endif // __ESTL_TYPES_H__

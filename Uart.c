@@ -28,6 +28,8 @@
  * @license Released under the GNU Lesser General Public License
  */
 
+#include "ESTL_Defines.h"
+#include "ESTL_Config.h"
 #include "ESTL_Types.h"
 #include "Error.h"
 #include "Uart.h"
@@ -56,14 +58,32 @@ void Uart_ReceiveChar(char c)
   if (Uart_data.line_received == 0)
   {
     Uart_data.receive_buffer[Uart_data.receive_buffer_index] = c;
-    if ( (Uart_data.receive_buffer_index > 0) && \
-         (Uart_data.receive_buffer[Uart_data.receive_buffer_index - 1] == '\r') && \
-         (Uart_data.receive_buffer[Uart_data.receive_buffer_index] == '\n'))
+#if( ESTL_TERMINAL_LINE_BREAK == ESTL_TERMINAL_LINE_BREAK_LF )
+    if( (Uart_data.receive_buffer_index > 0) && (Uart_data.receive_buffer[Uart_data.receive_buffer_index] == '\n'))
+    {
+      Uart_data.receive_buffer[Uart_data.receive_buffer_index] = '\0';
+      Uart_data.receive_buffer_index = 0;
+      Uart_data.line_received = 1;
+    }
+#elif( ESTL_TERMINAL_LINE_BREAK == ESTL_TERMINAL_LINE_BREAK_CR )
+    if( (Uart_data.receive_buffer_index > 0) && (Uart_data.receive_buffer[Uart_data.receive_buffer_index] == '\r'))
+    {
+      Uart_data.receive_buffer[Uart_data.receive_buffer_index] = '\0';
+      Uart_data.receive_buffer_index = 0;
+      Uart_data.line_received = 1;
+    }
+#elif( ESTL_TERMINAL_LINE_BREAK == ESTL_TERMINAL_LINE_BREAK_CRLF )
+    if( (Uart_data.receive_buffer_index > 0) &&
+          (Uart_data.receive_buffer[Uart_data.receive_buffer_index - 1] == '\r') &&
+          (Uart_data.receive_buffer[Uart_data.receive_buffer_index] == '\n'))
     {
       Uart_data.receive_buffer[Uart_data.receive_buffer_index - 1] = '\0';
       Uart_data.receive_buffer_index = 0;
       Uart_data.line_received = 1;
     }
+#else
+#error "ESTL_TERMINAL_LINE_BREAK not defined or invalid"
+#endif
     else
     {
       Uart_data.receive_buffer_index ++;

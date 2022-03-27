@@ -39,10 +39,7 @@
 #include "Scope.h"
 #include "Terminal.h"
 
-// ESTL_ENABLE_TERMINAL_REMOTE_PARAMETER
 #if( defined(ESTL_ENABLE_TERMINAL_REMOTE_PARAMETER) )
-//#include "Target.h"  // XXX needed by CANopen.h due to CAN_MSG_OBJ_t type
-//#include "CANopen.h"
 #include "Sdo.h"
 #include "Parameter_CANopen.h"
 #include "ScopePdo.h"
@@ -198,19 +195,31 @@ void Terminal_Task(void)
             Terminal_printf(terminal, "Scanning %d remote nodes...\r\n", j);
             for( i = 0; i < j; i ++ )
             {
+              int32_t device_type;
+              uint8_t  device_type_len = 0;
+              // read SDO CANopen device type
+              Sdo_ExpRead( i, 0x1000, 0x00, &device_type, &device_type_len );
+              while( Sdo_ReqIsBusy() );
+              if( Sdo_ReqIsFinished() )
+                Terminal_printf(terminal, "ID: %d\tType: 0x%08X", i, device_type);
               // read SDO CANopen name
               Sdo_SegRead( i, 0x1008, 0x00, node_seg_buffer, sizeof(node_seg_buffer) );
               while( Sdo_ReqIsBusy() );
               if( Sdo_ReqIsFinished() )
               {
-                Terminal_printf(terminal, "%3d: %s", i, node_seg_buffer);
+                if( device_type_len )
+                  Terminal_printf(terminal, "Name: %s", node_seg_buffer);
+                else
+                  Terminal_printf(terminal, "ID: %d\tName: %s", i, node_seg_buffer);
+                device_type_len = (uint8_t)TRUE;
                 // read SDO CANopen Firmware revision
                 Sdo_SegRead( i, 0x100A, 0x00, node_seg_buffer, sizeof(node_seg_buffer) );
                 while( Sdo_ReqIsBusy() );
                 if( Sdo_ReqIsFinished() )
-                  Terminal_printf(terminal, ", %s", node_seg_buffer);
-                Terminal_printf(terminal, "\r\n");
+                  Terminal_printf(terminal, "\tRev: %s", node_seg_buffer);
               }
+              if( device_type_len )
+                Terminal_printf(terminal, "\r\n");
             }
             Terminal_printf(terminal, "...done.\r\n");
             return;
