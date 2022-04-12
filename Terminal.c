@@ -46,6 +46,17 @@
 #endif
 
 
+#if( ESTL_TERMINAL_LINE_BREAK == ESTL_TERMINAL_LINE_BREAK_LF )
+#define LINE_BREAK "\n"
+#elif( ESTL_TERMINAL_LINE_BREAK == ESTL_TERMINAL_LINE_BREAK_CR )
+#define LINE_BREAK "\r"
+#elif( ESTL_TERMINAL_LINE_BREAK == ESTL_TERMINAL_LINE_BREAK_CRLF )
+#define LINE_BREAK "\r\n" LINE_BREAK
+#else
+#error "ESTL_TERMINAL_LINE_BREAK not defined or invalid"
+#endif
+
+
 /**
  * Structure containingTerminal's local static variables
  */
@@ -80,7 +91,7 @@ bool_t Terminal_PrintScope( uint16_t index, scope_sample_t * scope_sample );
 
 #if( defined(ESTL_ENABLE_TERMINAL_REMOTE_PARAMETER) )
 bool_t Terminal_PrintPdoScope( scope_pdo_sample_t * scope_pdo_sample );
-error_code_t Terminal_InitCanOpenTable( uint8_t node_id );
+error_code_t Terminal_InitCanOpenTable( const terminal_t * terminal, uint8_t node_id );
 int16_t Terminal_CanOpenFindIndexByName( char * parameter_name );
 #endif
 
@@ -135,7 +146,7 @@ void Terminal_Task(void)
       {
         Terminal_printf( terminal, "\t%d", Terminal_Data.scope_sample->channel[i] );
       }
-      Terminal_printf( terminal, "\r\n" );
+      Terminal_printf( terminal, LINE_BREAK );
       Terminal_Data.scope_has_new_sample = FALSE;
     }
 #endif
@@ -153,7 +164,7 @@ void Terminal_Task(void)
         else
           Terminal_printf( terminal, "\t##" );
       }
-      Terminal_printf( terminal, "\r\n" );
+      Terminal_printf( terminal, LINE_BREAK );
       Terminal_Data.scope_pdo_has_new_sample = FALSE;
     }
 #endif
@@ -181,9 +192,9 @@ void Terminal_Task(void)
         if( *argument == '\0' )
         {
           if( Terminal_Data.is_remote )
-            Terminal_printf(terminal, "connected to node %d\r\n", Terminal_Data.node_id);
+            Terminal_printf(terminal, "connected to node %d" LINE_BREAK, Terminal_Data.node_id);
           else
-            Terminal_printf(terminal, "off\r\n");
+            Terminal_printf(terminal, "off" LINE_BREAK);
         }
         else
         {
@@ -192,7 +203,7 @@ void Terminal_Task(void)
             uint8_t i;
             uint8_t j = Sdo_GetNrOfNodes();
             char node_seg_buffer[32];
-            Terminal_printf(terminal, "Scanning %d remote nodes...\r\n", j);
+            Terminal_printf(terminal, "Scanning %d remote nodes..." LINE_BREAK, j);
             for( i = 0; i < j; i ++ )
             {
               int32_t device_type;
@@ -208,7 +219,7 @@ void Terminal_Task(void)
               if( Sdo_ReqIsFinished() )
               {
                 if( device_type_len )
-                  Terminal_printf(terminal, "Name: %s", node_seg_buffer);
+                  Terminal_printf(terminal, "\tName: %s", node_seg_buffer);
                 else
                   Terminal_printf(terminal, "ID: %d\tName: %s", i, node_seg_buffer);
                 device_type_len = (uint8_t)TRUE;
@@ -219,9 +230,9 @@ void Terminal_Task(void)
                   Terminal_printf(terminal, "\tRev: %s", node_seg_buffer);
               }
               if( device_type_len )
-                Terminal_printf(terminal, "\r\n");
+                Terminal_printf(terminal, LINE_BREAK);
             }
-            Terminal_printf(terminal, "...done.\r\n");
+            Terminal_printf(terminal, "...done." LINE_BREAK);
             return;
           }
 /*
@@ -232,32 +243,32 @@ void Terminal_Task(void)
           else if( 0 == strcmp(argument, "off") )
           {
             Terminal_Data.is_remote = FALSE;
-            Terminal_printf(terminal, "OK\r\n");
+            Terminal_printf(terminal, "OK" LINE_BREAK);
           }
           else
           {
             uint8_t node_id = (uint8_t)Parse_StrToValue(argument);
             // try to fetch parameter table
-            error_code = Terminal_InitCanOpenTable( node_id );
+            error_code = Terminal_InitCanOpenTable( terminal,  node_id );
             if( OK != error_code )
             {
               Terminal_Data.is_remote = FALSE;
 #ifdef ESTL_ENABLE_ERROR_MESSAGES
-              Terminal_printf(terminal, "Could not fetch parameter from node %d: %s (error %d)\r\n", node_id, Error_GetMessage(error_code), error_code);
+              Terminal_printf(terminal, "Could not fetch parameter from node %d: %s (error %d)" LINE_BREAK, node_id, Error_GetMessage(error_code), error_code);
 #else
-              Terminal_printf(terminal, "Could not fetch parameter from node %d (error %d)\r\n", value, error_code);
+              Terminal_printf(terminal, "Could not fetch parameter from node %d (error %d)" LINE_BREAK, value, error_code);
 #endif
             }
             else
             {
               Terminal_Data.node_id = node_id;
               Terminal_Data.is_remote = TRUE;
-              Terminal_printf(terminal, "OK\r\n");
+              Terminal_printf(terminal, "OK" LINE_BREAK);
             }
           }
         }
         return;
-      } // we received 'CANopen-ID'
+      } // we received 'remote'
 #endif // ESTL_ENABLE_TERMINAL_REMOTE_PARAMETER
 
       // check if we received 'help'
@@ -268,37 +279,37 @@ void Terminal_Task(void)
           int16_t i;
           range_t index_range;
 #if( defined(ESTL_ENABLE_TERMINAL_REMOTE_PARAMETER) )
-          Terminal_printf(terminal, "remote: access to remote parameter interface\r\n" \
-                                    "  off:    turn off remote access\r\n" \
-                                    "  scan:   look for available remote nodes\r\n" \
+          Terminal_printf(terminal, "remote: access to remote parameter interface" LINE_BREAK \
+                                    "  off:    turn off remote access" LINE_BREAK \
+                                    "  scan:   look for available remote nodes" LINE_BREAK \
 /*
-                                    "  save:   save remote parameter to non-volatile memory\r\n" \
+                                    "  save:   save remote parameter to non-volatile memory" LINE_BREAK \
 */
-                                    "  0..127: remote node ID to be connected to\r\n" );
+                                    "  0..127: remote node ID to be connected to" LINE_BREAK );
 #endif
 
 #if( defined(ESTL_ENABLE_TERMINAL_REMOTE_PARAMETER) )
           if( Terminal_Data.is_remote )
           {
-            Terminal_printf(terminal, "Remote node %d parameters -- type 'help <parameter>' to get detailed information\r\n", Terminal_Data.node_id);
+            Terminal_printf(terminal, "Remote node %d parameters -- type 'help <parameter>' to get detailed information" LINE_BREAK, Terminal_Data.node_id);
             parameter_data_t * parameter_data = (parameter_data_t*)Terminal_Data.can_open_buffer;
             for( i = Terminal_Data.can_open_index_range.min; i <= Terminal_Data.can_open_index_range.max; i ++ )
             {
               // TODO print parameter according to access level and visibility
-              printf( "%s\r\n", parameter_data->name );
+              printf( "%s" LINE_BREAK, parameter_data->name );
               parameter_data ++;
             }
           }
           else
           {
 #endif
-            Terminal_printf(terminal, "Built in parameters -- type 'help <parameter>' to get detailed information\r\n");
+            Terminal_printf(terminal, "Built in parameters -- type 'help <parameter>' to get detailed information" LINE_BREAK);
             index_range = Parameter_GetIndexRange();
             for( i = index_range.min; i <= index_range.max; i ++ )
             {
               parameter_data_t parameter_data;
               if( OK == Parameter_ReadData(i, &parameter_data) )
-                Terminal_printf(terminal, "%s\r\n", parameter_data.name);
+                Terminal_printf(terminal, "%s" LINE_BREAK, parameter_data.name);
             }
 #if( defined(ESTL_ENABLE_TERMINAL_REMOTE_PARAMETER) )
           }
@@ -332,7 +343,7 @@ void Terminal_Task(void)
 
               // TODO print parameter according to access level and visibility and read-success
               Terminal_PrintParameterDetails( terminal, parameter_data, value, info );
-              Terminal_printf(terminal, "\r\n");
+              Terminal_printf(terminal, LINE_BREAK);
             }
           }
           else
@@ -349,7 +360,7 @@ void Terminal_Task(void)
                 Terminal_PrintErrorMessage(terminal, parameter_read_status);
               else
                 Terminal_PrintParameterDetails( terminal, &parameter_data, Parameter_GetValue(parameter_index), Parameter_GetHelp(parameter_index) );
-              Terminal_printf(terminal, "\r\n");
+              Terminal_printf(terminal, LINE_BREAK);
             }
 #if( defined(ESTL_ENABLE_TERMINAL_REMOTE_PARAMETER) )
           }
@@ -401,7 +412,7 @@ void Terminal_Task(void)
           if( parameter_access_status != OK )
             Terminal_PrintErrorMessage(terminal, parameter_access_status);
           else
-            Terminal_printf(terminal, "OK\r\n");
+            Terminal_printf(terminal, "OK" LINE_BREAK);
         }
         else
         {
@@ -431,7 +442,7 @@ void Terminal_Task(void)
           {
             char value_str[16];
             Unit_PhysicalValueToString( value_str, sizeof(value_str), value, parameter_data_ptr->repr, parameter_data_ptr->unit );
-            Terminal_printf(terminal, "%s\r\n", value_str);
+            Terminal_printf(terminal, "%s" LINE_BREAK, value_str);
           }
         }
       } // we received a valid parameter
@@ -456,23 +467,23 @@ void Terminal_PrintParameterDetails( const terminal_t * terminal, parameter_data
   uint16_t len, l;
   Unit_PhysicalValueToString( value_str, sizeof(value_str), value, parameter_data->repr, parameter_data->unit );
   len = strlen(parameter_data->name);
-  Terminal_printf(terminal, "\r\n+");
+  Terminal_printf(terminal, LINE_BREAK "+");
   for( l = 0; l < (len + 4); l ++ )
     Terminal_printf(terminal, "-");
-  Terminal_printf(terminal, "+\r\n|  %s  |\r\n+", parameter_data->name);
+  Terminal_printf(terminal, "+" LINE_BREAK "|  %s  |" LINE_BREAK "+", parameter_data->name);
   for( l = 0; l < (len + 4); l ++ )
     Terminal_printf(terminal, "-");
-  Terminal_printf(terminal, "+\r\nValue:   %s\r\n", value_str);
+  Terminal_printf(terminal, "+" LINE_BREAK "Value:   %s" LINE_BREAK, value_str);
   if( parameter_data->flags & INFO )
   {
     Unit_PhysicalValueToString( value_str, sizeof(value_str), parameter_data->nominal, parameter_data->repr, parameter_data->unit );
     Unit_PhysicalValueToString( minimum_str, sizeof(minimum_str), parameter_data->minimum, parameter_data->repr, parameter_data->unit );
     Unit_PhysicalValueToString( maximum_str, sizeof(maximum_str), parameter_data->maximum, parameter_data->repr, parameter_data->unit );
-    Terminal_printf(terminal, "Default: %s\r\nRange:   %s .. %s\r\nFlags:   0x%04X\r\n",
+    Terminal_printf(terminal, "Default: %s" LINE_BREAK "Range:   %s .. %s" LINE_BREAK "Flags:   0x%04X" LINE_BREAK,
         value_str, minimum_str, maximum_str, parameter_data->flags);
   }
   if( info )
-    Terminal_printf(terminal, "%s\r\n", info);
+    Terminal_printf(terminal, "%s" LINE_BREAK, info);
 }
 
 
@@ -484,7 +495,7 @@ void Terminal_PrintParameterDetails( const terminal_t * terminal, parameter_data
  */
 void Terminal_ParameterNotFoundMessage( const terminal_t * terminal, char *str )
 {
-  Terminal_printf(terminal, "Parameter not found [%s]\r\n", str);
+  Terminal_printf(terminal, "Parameter not found [%s]" LINE_BREAK, str);
 }
 
 
@@ -497,9 +508,9 @@ void Terminal_ParameterNotFoundMessage( const terminal_t * terminal, char *str )
 void Terminal_PrintErrorMessage( const terminal_t * terminal, error_code_t error )
 {
 #ifdef ESTL_ENABLE_ERROR_MESSAGES
-  Terminal_printf(terminal, "ERR: %s (error %d)\r\n", Error_GetMessage(error), error);
+  Terminal_printf(terminal, "ERR: %s (error %d)" LINE_BREAK, Error_GetMessage(error), error);
 #else
-  Terminal_printf(terminal, "ERR: (error %d)\r\n", error);
+  Terminal_printf(terminal, "ERR: (error %d)" LINE_BREAK, error);
 #endif
 }
 
@@ -531,12 +542,13 @@ bool_t Terminal_PrintPdoScope( scope_pdo_sample_t * scope_pdo_sample )
 /**
  * Initialize the parameter table of a device which is connected via CANopen.
  *
+ * @param     terminal         The terminal where the message has to be printed.
  * @param     node_id          CANopen node ID.
  * @return                     Error code.
  */
-error_code_t Terminal_InitCanOpenTable( uint8_t node_id )
+error_code_t Terminal_InitCanOpenTable( const terminal_t * terminal, uint8_t node_id )
 {
-  int32_t parameter_table_size, str_len, remaining_str_len, i;
+  int32_t nr_of_parameter_entries, parameter_table_size, str_len, remaining_str_len, i;
   uint32_t table_crc;
   char * str;
   parameter_data_t * parameter_data;
@@ -554,9 +566,15 @@ error_code_t Terminal_InitCanOpenTable( uint8_t node_id )
   if( OK != error )
     return error;
 
-  parameter_table_size = (Terminal_Data.can_open_index_range.max - Terminal_Data.can_open_index_range.min + 1) * sizeof(parameter_data_t);
+  nr_of_parameter_entries = Terminal_Data.can_open_index_range.max - Terminal_Data.can_open_index_range.min + 1;
+  parameter_table_size = nr_of_parameter_entries * sizeof(parameter_data_t);
   if( parameter_table_size > sizeof(Terminal_Data.can_open_buffer) )
     return BUFFER_TOO_SMALL;
+
+  // busy bar
+  q15_t busy_inc = (15 * Q15_FACTOR) / nr_of_parameter_entries;
+  q15_t busy_bar = Q15(0);
+  Terminal_printf(terminal, "|");
 
   // load parameter table
 //  Parameter_CANopen_Data.buffer = Terminal_Data.can_open_buffer;
@@ -568,7 +586,15 @@ error_code_t Terminal_InitCanOpenTable( uint8_t node_id )
       return error;
 
     parameter_data ++;
+
+    busy_bar += busy_inc;
+    while( q15_GetMantissa(busy_bar) )
+    {
+      Terminal_printf(terminal, "=");
+      busy_bar -= Q15_FACTOR;
+    }
   }
+
   // load parameter names
   remaining_str_len = sizeof(Terminal_Data.can_open_buffer) - parameter_table_size;
   str = (char*)(Terminal_Data.can_open_buffer + parameter_table_size);
@@ -587,7 +613,15 @@ error_code_t Terminal_InitCanOpenTable( uint8_t node_id )
 
     remaining_str_len -= str_len;
     parameter_data ++;
+
+    busy_bar += busy_inc;
+    while( q15_GetMantissa(busy_bar) )
+    {
+      Terminal_printf(terminal, "=");
+      busy_bar -= Q15_FACTOR;
+    }
   }
+  Terminal_printf(terminal, "|" LINE_BREAK);
   Terminal_Data.table_crc = table_crc;
   return OK;
 }

@@ -1,0 +1,64 @@
+//----------------------------------------------------------------------------//
+//  Copyright 2021 Clemens Treichler                                          //
+//                                                                            //
+//  Copying and distribution of this file, with or without modification,      //
+//  are permitted in any medium without royalty, provided the copyright       //
+//  notice and this notice are preserved. This file is offered as-is,         //
+//  without any warranty.                                                     //
+//----------------------------------------------------------------------------//
+
+/**
+ * @file Debug_Access.h
+ * @brief Application specific white-list and debug lookup-table
+ *
+ * This file interfaces the application specific address lookup-table and
+ * white-list to the debug module.
+ * There should be no need for any modification, neither should this file
+ * be included anywhere else except in Debug.c
+ */
+
+#ifndef __DEBUG_ACCESS_H__
+#define __DEBUG_ACCESS_H__
+
+
+/**
+ * @ingroup  DEBUG
+ * @defgroup DEBUG_ACCESS  Debug Access
+ * @brief    Application specific access to debug module
+ *
+ * This module completes @ref DEBUG to control application specific access
+ * to dedicated resources.
+ * An address lookup table allows access to data, where absolute addresses
+ * might change during development and compiling.
+ * An address white list is used to grant access to allowed address ranges
+ * for non-developer users.
+ * @{
+ */
+
+
+/**
+ * Check if address is white-listed, respectively within allowed address
+ * ranges.
+ *
+ * @param address       Address to be checked.
+ * @return              White-list status of address.
+ *   @retval    FALSE   Address is forbidden.
+ *   @retval    TRUE    Address is white-listed.
+ */
+bool_t DebugAccess_AddressIsWhiteListed( int32_t address );
+
+
+/**
+ * Get an address from lookup table.
+ *
+ * @param index         Address table's index.
+ * @return              Address stored at table's index.
+ */
+int32_t DebugAccess_LookupTableGetAddress(int32_t index);
+
+
+/**
+ * @} end of DEBUG
+ */
+
+#endif // __DEBUG_ACCESS_H__

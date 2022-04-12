@@ -52,7 +52,6 @@ error_code_t ParameterTable_GetEntry(const parameter_table_entry_t ** table_entr
   if( index >= NR_OF_PARAMETER_TABLE_ENTRIES )
     return INDEX_OUT_OF_BOUNDARY;
   *table_entry = &Parameter_table[index];
-//  memcpy(table_entry, &Parameter_table[index], sizeof(parameter_table_entry_t));
   return OK;
 }
 

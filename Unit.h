@@ -58,11 +58,12 @@ typedef enum {
   UNIT_SECOND,
   UNIT_MINUTE,
   UNIT_HOUR,
+  UNIT_1_PER_SECOND,            //!<  Frequency
   UNIT_HERTZ,                   //!<  Frequency
   UNIT_K_HERTZ,
   UNIT_MEG_HERTZ,
-  UNIT_BAUD,                    //!<  Data rate
   UNIT_RPM,                     //!<  Rotational speed
+  UNIT_BAUD,                    //!<  Data rate
   UNIT_JOULE,                   //!<  Thermal energy
   UNIT_WATT_SECOND,             //!<  Electrical energy
   UNIT_WATT_HOUR,

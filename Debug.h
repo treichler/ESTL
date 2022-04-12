@@ -45,6 +45,13 @@
  * Access is granted by providing the address and a bit-mask.
  * The amount of debug channels provided by this module is externally defined
  * in ESTL_Config.h with ESTL_DEBUG_NR_OF_ENTRIES.
+ *
+ * @par Access restrictions
+ * Full access respectively read and write is only granted to developer.
+ * Any other level gets read-access only to white-listed address ranges and
+ * write access is generally prohibited.
+ * Anyhow access is also controlled by dedicated parameter access level
+ * (see \ref PARAMETER module for more details).
  * @{
  */
 

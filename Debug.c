@@ -35,7 +35,7 @@
 #include "Error.h"
 #include "Parameter.h"
 #include "Debug.h"
-#include "Debug_LookupTable.h"
+#include "Debug_Access.h"
 
 typedef struct {
   int32_t address;
@@ -48,29 +48,16 @@ struct {
 } Debug_data;
 
 
-bool_t Debug_AddressIsWhiteListed( int32_t address )
-{
-  // TODO check if address is allowed
-  return TRUE;
-}
-
-
 int32_t Debug_GetValue(uint8_t index)
 {
-  int32_t address, mask;
-
   if (index < ESTL_DEBUG_NR_OF_ENTRIES)
   {
-    address = Debug_data.debug[index].address;
-    mask = Debug_data.debug[index].mask;
-//    if ((OK == Debug_CheckAddress(address)))
-//    {
-      if (mask & 0xFFFF0000)
-        return (*(int32_t*)address) & mask;                         // read as 32 bit type
-      else if (mask & 0xFF00)
-        return (int32_t)((*(int16_t*)address) & (int16_t)mask);     // read as 16 bit type
-      return (int32_t)((*(int8_t*)address) & (int8_t)mask);         // read as 8 bit type
-//    }
+    Debug_data_access_t *data = &Debug_data.debug[index];
+    if( data->mask & 0xFFFF0000 )
+      return (*(int32_t*)data->address) & data->mask;                         // read as 32 bit type
+    else if( data->mask & 0xFF00 )
+      return (int32_t)((*(int16_t*)data->address) & (int16_t)data->mask);     // read as 16 bit type
+    return (int32_t)((*(int8_t*)data->address) & (int8_t)data->mask);         // read as 8 bit type
   }
   return 0;
 }
@@ -82,8 +69,12 @@ error_code_t Debug_AddrParameterFunction(parameter_function_t parameter_function
     *address = Debug_data.debug[Debug_data.index].address;
   if (parameter_function == PARAMETER_WRITE)
   {
-    if( (! Parameter_CurrentAccessLevelIsDeveloper()) && (! Debug_AddressIsWhiteListed(*address)) )
+    if( (! Parameter_CurrentAccessLevelIsDeveloper()) && (! DebugAccess_AddressIsWhiteListed(*address)) )
+    {
+      Debug_data.debug[Debug_data.index].address = 0;
+      Debug_data.debug[Debug_data.index].mask    = 0;
       return NOT_ACCESSIBLE;
+    }
     Debug_data.debug[Debug_data.index].address = *address;
   }
   return OK;
@@ -96,8 +87,12 @@ error_code_t Debug_MaskParameterFunction(parameter_function_t parameter_function
     *mask = Debug_data.debug[Debug_data.index].mask;
   if (parameter_function == PARAMETER_WRITE)
   {
-    if( (! Parameter_CurrentAccessLevelIsDeveloper()) && (! Debug_AddressIsWhiteListed(Debug_data.debug[Debug_data.index].address)) )
+    if( (! Parameter_CurrentAccessLevelIsDeveloper()) && (! DebugAccess_AddressIsWhiteListed(Debug_data.debug[Debug_data.index].address)) )
+    {
+      Debug_data.debug[Debug_data.index].address = 0;
+      Debug_data.debug[Debug_data.index].mask    = 0;
       return NOT_ACCESSIBLE;
+    }
     Debug_data.debug[Debug_data.index].mask = *mask;
   }
   return OK;
@@ -124,7 +119,7 @@ error_code_t Debug_DataParameterFunction(parameter_function_t parameter_function
   {
     // if mask is zero return value from address lookup table
     if (mask == 0x00000000)
-      *value = Debug_LookupTableGetAddress(Debug_data.debug[Debug_data.index].address);
+      *value = DebugAccess_LookupTableGetAddress(Debug_data.debug[Debug_data.index].address);
     else
       *value = Debug_GetValue(Debug_data.index);
   }
