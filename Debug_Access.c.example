@@ -8,7 +8,7 @@
 //----------------------------------------------------------------------------//
 
 /**
- * @file Debug_AppAccess.c
+ * @file Debug_Access.c
  * @brief Application specific debug access
  *
  * This file holds the references to variables which might be of interest for

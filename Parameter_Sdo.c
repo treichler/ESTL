@@ -19,7 +19,7 @@
 //----------------------------------------------------------------------------//
 
 /**
- * @file Parameter_CANopen.c
+ * @file Parameter_Sdo.c
  *
  * @author Clemens Treichler clemens.treichler(at)aon.at
  *
@@ -32,13 +32,9 @@
 #include "ESTL_Config.h"
 #include "ESTL_Types.h"
 #include "Error.h"
-
-//#include "Target.h"
-
-//#include "CANopen.h"
 #include "Sdo.h"
 #include "Parameter.h"
-#include "Parameter_CANopen.h"
+#include "Parameter_Sdo.h"
 
 // pseudo_code[31..16], mapped_error[15..0]
 #define PSEUDO_SDO_ABORT_CODE (0x10100000)
@@ -62,14 +58,14 @@ enum {
 };
 
 
-error_code_t Parameter_CANopen_ReadTableIndexRange( uint8_t node_id, range_t * parameter_index_range )
+error_code_t ParameterSdo_ReadTableIndexRange( uint8_t node_id, range_t * parameter_index_range )
 {
   int32_t temp;
 
   Sdo_ExpRead( node_id, 0x2000, SUBIDX_PARAM_INDEX_RANGE, &temp, 0 );
   while( Sdo_ReqIsBusy() );
   if( ! Sdo_ReqIsFinished() )
-    return CAN_SDO_CONNECTION_FAILED;
+    return SDO_CONNECTION_FAILED;
   parameter_index_range->max = (int16_t)(temp >> 16);
   parameter_index_range->min = (int16_t)temp;
 
@@ -77,17 +73,17 @@ error_code_t Parameter_CANopen_ReadTableIndexRange( uint8_t node_id, range_t * p
 }
 
 
-error_code_t Parameter_CANopen_ReadTableCrc( uint8_t node_id, uint32_t * crc )
+error_code_t ParameterSdo_ReadTableCrc( uint8_t node_id, uint32_t * crc )
 {
   Sdo_ExpRead( node_id, 0x2000, SUBIDX_PARAM_TABLE_CRC, (int32_t*)crc, 0 );
   while( Sdo_ReqIsBusy() );
   if( ! Sdo_ReqIsFinished() )
-    return CAN_SDO_CONNECTION_FAILED;
+    return SDO_CONNECTION_FAILED;
   return OK;
 }
 
 
-error_code_t Parameter_CANopen_ReadName( uint8_t node_id, int16_t parameter_index, char * name, uint16_t len )
+error_code_t ParameterSdo_ReadName( uint8_t node_id, int16_t parameter_index, char * name, uint16_t len )
 {
   uint16_t index = 0x2000 + ((uint16_t)(parameter_index) >> 2);
   uint8_t sub_index = ((uint8_t)(parameter_index) << 6);
@@ -95,12 +91,12 @@ error_code_t Parameter_CANopen_ReadName( uint8_t node_id, int16_t parameter_inde
   Sdo_SegRead( node_id, index, sub_index + SUBIDX_PARAM_NAME, name, len );
   while( Sdo_ReqIsBusy() );
   if( ! Sdo_ReqIsFinished() )
-    return CAN_SDO_CONNECTION_FAILED;
+    return SDO_CONNECTION_FAILED;
   return OK;
 }
 
 
-error_code_t Parameter_CANopen_ReadInfo( uint8_t node_id, int16_t parameter_index, char * info, uint16_t len )
+error_code_t ParameterSdo_ReadInfo( uint8_t node_id, int16_t parameter_index, char * info, uint16_t len )
 {
   uint16_t index = 0x2000 + ((uint16_t)(parameter_index) >> 2);
   uint8_t sub_index = ((uint8_t)(parameter_index) << 6);
@@ -111,12 +107,12 @@ error_code_t Parameter_CANopen_ReadInfo( uint8_t node_id, int16_t parameter_inde
   while( Sdo_ReqIsBusy() );
   info[len-1] = '\0';
   if( ! Sdo_ReqIsFinished() )
-    return CAN_SDO_CONNECTION_FAILED;
+    return SDO_CONNECTION_FAILED;
   return OK;
 }
 
 
-error_code_t Parameter_CANopen_ReadValue( uint8_t node_id, int16_t parameter_index, int32_t * value )
+error_code_t ParameterSdo_ReadValue( uint8_t node_id, int16_t parameter_index, int32_t * value )
 {
   uint16_t index = 0x2000 + ((uint16_t)(parameter_index) >> 2);
   uint8_t sub_index = ((uint8_t)(parameter_index) << 6);
@@ -124,12 +120,12 @@ error_code_t Parameter_CANopen_ReadValue( uint8_t node_id, int16_t parameter_ind
   Sdo_ExpRead( node_id, index, sub_index + SUBIDX_PARAM_ACTUAL, value, 0 );
   while( Sdo_ReqIsBusy() );
   if( ! Sdo_ReqIsFinished() )
-    return CAN_SDO_CONNECTION_FAILED;
+    return SDO_CONNECTION_FAILED;
   return OK;
 }
 
 
-error_code_t Parameter_CANopen_WriteValue( uint8_t node_id, int16_t parameter_index, int32_t value )
+error_code_t ParameterSdo_WriteValue( uint8_t node_id, int16_t parameter_index, int32_t value )
 {
   uint16_t index = 0x2000 + ((uint16_t)(parameter_index) >> 2);
   uint8_t sub_index = ((uint8_t)(parameter_index) << 6);
@@ -142,13 +138,13 @@ error_code_t Parameter_CANopen_WriteValue( uint8_t node_id, int16_t parameter_in
     if( PSEUDO_SDO_ABORT_CODE == (0xFFFF0000 & sdo_abort_code) )
       return (error_code_t)sdo_abort_code;
     else
-      return CAN_SDO_CONNECTION_FAILED;
+      return SDO_CONNECTION_FAILED;
   }
   return OK;
 }
 
 
-error_code_t Parameter_CANopen_ReadTableEntry( uint8_t node_id, int16_t parameter_index, parameter_data_t * parameter_data )
+error_code_t ParameterSdo_ReadTableEntry( uint8_t node_id, int16_t parameter_index, parameter_data_t * parameter_data )
 {
   uint16_t index = 0x2000 + ((uint16_t)(parameter_index) >> 2);
   uint8_t sub_index = ((uint8_t)(parameter_index) << 6);
@@ -157,7 +153,7 @@ error_code_t Parameter_CANopen_ReadTableEntry( uint8_t node_id, int16_t paramete
   Sdo_ExpRead( node_id, index, sub_index + SUBIDX_PARAM_PROPERTY, &temp, 0 );
   while( Sdo_ReqIsBusy() );
   if( ! Sdo_ReqIsFinished() )
-    return CAN_SDO_CONNECTION_FAILED;
+    return SDO_CONNECTION_FAILED;
   parameter_data->flags = (uint16_t)temp;
   parameter_data->repr = (repr_t)(temp >> 16);
   parameter_data->unit = (unit_t)(temp >> 24);
@@ -165,19 +161,19 @@ error_code_t Parameter_CANopen_ReadTableEntry( uint8_t node_id, int16_t paramete
   Sdo_ExpRead( node_id, index, sub_index + SUBIDX_PARAM_NOMINAL, &temp, 0 );
   while( Sdo_ReqIsBusy() );
   if( ! Sdo_ReqIsFinished() )
-    return CAN_SDO_CONNECTION_FAILED;
+    return SDO_CONNECTION_FAILED;
   parameter_data->nominal = (int32_t)temp;
 
   Sdo_ExpRead( node_id, index, sub_index + SUBIDX_PARAM_MINIMUM, &temp, 0 );
   while( Sdo_ReqIsBusy() );
   if( ! Sdo_ReqIsFinished() )
-    return CAN_SDO_CONNECTION_FAILED;
+    return SDO_CONNECTION_FAILED;
   parameter_data->minimum = (int32_t)temp;
 
   Sdo_ExpRead( node_id, index, sub_index + SUBIDX_PARAM_MAXIMUM, &temp, 0 );
   while( Sdo_ReqIsBusy() );
   if( ! Sdo_ReqIsFinished() )
-    return CAN_SDO_CONNECTION_FAILED;
+    return SDO_CONNECTION_FAILED;
   parameter_data->maximum = (int32_t)temp;
 
   return OK;
@@ -185,16 +181,12 @@ error_code_t Parameter_CANopen_ReadTableEntry( uint8_t node_id, int16_t paramete
 
 
 // Return values for CANopen_CallbackSdoReq() callback
-#define CAN_SDOREQ_NOTHANDLED     0     // process regularly, no impact
-#define CAN_SDOREQ_HANDLED_SEND   1     // processed in callback, auto-send returned msg
-#define CAN_SDOREQ_HANDLED_NOSEND 2     // processed in callback, don't send response
+#define CAN_SDOREQ_NOTHANDLED     (0)     // process regularly, no impact
+#define CAN_SDOREQ_HANDLED_SEND   (1)     // processed in callback, auto-send returned msg
+#define CAN_SDOREQ_HANDLED_NOSEND (2)     // processed in callback, don't send response
 
-/**
- * This callback maps the parameter-set to the SDO index range 0x2000..0x5FFF.
- * This function needs to be called if any other SDO request for this
- * particular node cannot be handled.
- */
-uint8_t Parameter_CANopen_CallbackSdoReq( uint8_t length_req, uint8_t *req_ptr, uint8_t *length_resp, uint8_t *resp_ptr )
+
+uint8_t ParameterSdo_CallbackSdoReq( uint8_t length_req, uint8_t *req_ptr, uint8_t *length_resp, uint8_t *resp_ptr )
 {
   if( 8 == length_req )
   {

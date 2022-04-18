@@ -97,7 +97,8 @@ typedef enum {
 
   SCOPE_IS_BUSY,                //!<  Scope is already running
 
-  CAN_SDO_CONNECTION_FAILED,    //!<  CANopen SDO connection failed
+  SDO_CONNECTION_FAILED,        //!<  Service data object (SDO) connection failed
+
   CAN_TX_MAILBOX_NOT_EMPTY,     //!<  The accessed CAN mailbox is not yet sent
   CAN_NO_TX_MAILBOX,            //!<  The accessed CAN mailbox does not exist
 

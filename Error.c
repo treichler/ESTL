@@ -84,7 +84,8 @@ const char * Error_GetMessage(error_code_t error)
 
     [SCOPE_IS_BUSY                - UNKNOWN_ERROR] = "Scope is busy",
 
-    [CAN_SDO_CONNECTION_FAILED    - UNKNOWN_ERROR] = "CAN SDO connection failed",
+    [SDO_CONNECTION_FAILED        - UNKNOWN_ERROR] = "SDO connection failed",
+
     [CAN_TX_MAILBOX_NOT_EMPTY     - UNKNOWN_ERROR] = "",
     [CAN_NO_TX_MAILBOX            - UNKNOWN_ERROR] = "",
 

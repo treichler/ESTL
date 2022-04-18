@@ -41,7 +41,7 @@
 
 #if( defined(ESTL_ENABLE_TERMINAL_REMOTE_PARAMETER) )
 #include "Sdo.h"
-#include "Parameter_CANopen.h"
+#include "Parameter_Sdo.h"
 #include "ScopePdo.h"
 #endif
 
@@ -51,7 +51,7 @@
 #elif( ESTL_TERMINAL_LINE_BREAK == ESTL_TERMINAL_LINE_BREAK_CR )
 #define LINE_BREAK "\r"
 #elif( ESTL_TERMINAL_LINE_BREAK == ESTL_TERMINAL_LINE_BREAK_CRLF )
-#define LINE_BREAK "\r\n" LINE_BREAK
+#define LINE_BREAK "\r\n"
 #else
 #error "ESTL_TERMINAL_LINE_BREAK not defined or invalid"
 #endif
@@ -334,10 +334,10 @@ void Terminal_Task(void)
               error_code_t error_code;
               int32_t value;
               parameter_data_t * parameter_data = &((parameter_data_t*)Terminal_Data.can_open_buffer)[parameter_index - Terminal_Data.can_open_index_range.min];
-              error_code = Parameter_CANopen_ReadInfo( Terminal_Data.node_id, parameter_index, info, sizeof(info) );
+              error_code = ParameterSdo_ReadInfo( Terminal_Data.node_id, parameter_index, info, sizeof(info) );
               if( OK != error_code )
                 Terminal_PrintErrorMessage(terminal, error_code);
-              error_code = Parameter_CANopen_ReadValue( Terminal_Data.node_id, parameter_index, &value );
+              error_code = ParameterSdo_ReadValue( Terminal_Data.node_id, parameter_index, &value );
               if( OK != error_code )
                 Terminal_PrintErrorMessage(terminal, error_code);
 
@@ -402,7 +402,7 @@ void Terminal_Task(void)
           value = Parse_StrToValue( argument );
 #if( defined(ESTL_ENABLE_TERMINAL_REMOTE_PARAMETER) )
           if( Terminal_Data.is_remote )
-            parameter_access_status = Parameter_CANopen_WriteValue( Terminal_Data.node_id, parameter_index, value );
+            parameter_access_status = ParameterSdo_WriteValue( Terminal_Data.node_id, parameter_index, value );
           else
             parameter_access_status = Parameter_WriteValue( parameter_index, value );
 #else
@@ -424,7 +424,7 @@ void Terminal_Task(void)
           if( Terminal_Data.is_remote )
           {
             parameter_data_ptr = &((parameter_data_t*)Terminal_Data.can_open_buffer)[parameter_index - Terminal_Data.can_open_index_range.min];
-            parameter_access_status = Parameter_CANopen_ReadValue( Terminal_Data.node_id, parameter_index, &value );
+            parameter_access_status = ParameterSdo_ReadValue( Terminal_Data.node_id, parameter_index, &value );
           }
           else
           {
@@ -555,14 +555,14 @@ error_code_t Terminal_InitCanOpenTable( const terminal_t * terminal, uint8_t nod
   error_code_t error;
 
   // get and check parameter table's CRC
-  error = Parameter_CANopen_ReadTableCrc(node_id, &table_crc);
+  error = ParameterSdo_ReadTableCrc(node_id, &table_crc);
   if( OK != error )
     return error;
   if( Terminal_Data.table_crc == table_crc )
     return OK;
 
   // get parameter table index range
-  error = Parameter_CANopen_ReadTableIndexRange(node_id, &Terminal_Data.can_open_index_range);
+  error = ParameterSdo_ReadTableIndexRange(node_id, &Terminal_Data.can_open_index_range);
   if( OK != error )
     return error;
 
@@ -581,7 +581,7 @@ error_code_t Terminal_InitCanOpenTable( const terminal_t * terminal, uint8_t nod
   parameter_data = (parameter_data_t*)Terminal_Data.can_open_buffer;
   for( i = Terminal_Data.can_open_index_range.min; i <= Terminal_Data.can_open_index_range.max; i ++)
   {
-    error = Parameter_CANopen_ReadTableEntry( node_id, i, parameter_data );
+    error = ParameterSdo_ReadTableEntry( node_id, i, parameter_data );
     if( OK != error )
       return error;
 
@@ -601,7 +601,7 @@ error_code_t Terminal_InitCanOpenTable( const terminal_t * terminal, uint8_t nod
   parameter_data = (parameter_data_t*)Terminal_Data.can_open_buffer;
   for( i = Terminal_Data.can_open_index_range.min; i <= Terminal_Data.can_open_index_range.max; i ++)
   {
-    error = Parameter_CANopen_ReadName( node_id, i, str, remaining_str_len );
+    error = ParameterSdo_ReadName( node_id, i, str, remaining_str_len );
     if( OK != error )
       return error;
 
