@@ -82,10 +82,18 @@
  * containing memory for each debug channel.
  */
 typedef struct _scope_sample_t_ {
-  int32_t channel[ESTL_DEBUG_NR_OF_ENTRIES];
+  int32_t channel[ESTL_DEBUG_NR_OF_ENTRIES];    //!<  Provide memory for each scope channel channel
 } scope_sample_t;
 
 
+/**
+ * Initialize the scope respectively DAQ with a data print function.
+ * The print function is expected to take to arguments, where the first
+ * variable holds the scope sample's index and the second one is a the
+ * pointer to the scope sample to be printed.
+ *
+ * @param  PrintFunction
+ */
 void Scope_Init( bool_t (* PrintFunction)(uint16_t, scope_sample_t*) );
 
 
@@ -138,12 +146,6 @@ void Scope_Task(void);
  *                    channels. If index does not exist zero is returned instead.
  */
 scope_sample_t * Scope_GetSample(uint16_t index);
-
-
-bool_t Scope_IsComplete( void );
-void Scope_SetStop( void );
-bool_t Scope_IsDaqMode( void );
-uint16_t Scope_ReadDaqSample( scope_sample_t ** sample );
 
 
 /**

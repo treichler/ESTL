@@ -52,8 +52,8 @@ typedef enum {
  * Define a type to represent a range
  */
 typedef struct {
-  int16_t min;
-  int16_t max;
+  int16_t min;  //!< Range's minimum value
+  int16_t max;  //!< Range's maximum value
 } range_t;
 
 
@@ -96,8 +96,13 @@ typedef enum {
  */
 typedef int32_t q15_t;
 
-#define Q15_SHIFT       (16)
-#define Q15_FACTOR      (1 << Q15_SHIFT)
+/**
+ * @name Definitions for Q15.16 fixed point representation
+ * @{
+ */
+#define Q15_SHIFT       (16)                    //!<  Decimal point position of Q15.16 representation
+#define Q15_FACTOR      (1 << Q15_SHIFT)        //!<  Q15.16 scaling factor
+/** @} */
 
 
 /**

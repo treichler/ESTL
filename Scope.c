@@ -82,18 +82,12 @@ struct {
 
   int32_t        trigger_level;
 
-//  uint16_t       read_index;
   bool_t         (* PrintFunction)(uint16_t, scope_sample_t*);    //!<  Scope data print function
 
   scope_sample_t buffer[ESTL_SCOPE_NR_OF_SAMPLES];
 } Scope_data;
 
 
-/**
- * Initialize the scope respectively DAQ with a data print function
- *
- * @param  PrintFunction
- */
 void Scope_Init( bool_t (* PrintFunction)(uint16_t, scope_sample_t*) )
 {
   if( NULL != PrintFunction )
@@ -266,37 +260,5 @@ scope_sample_t * Scope_GetSample(uint16_t index)
   return &(Scope_data.buffer[index]);
 }
 
-/*
-inline bool_t Scope_IsComplete( void )
-{
-  return SCOPE_COMPLETE == Scope_data.state;
-}
-
-
-inline void Scope_SetStop( void )
-{
-  if( SCOPE_COMPLETE == Scope_data.state )
-    Scope_data.state = SCOPE_STOP;
-}
-
-
-inline bool_t Scope_IsDaqMode( void )
-{
-  return SCOPE_DAQ == Scope_data.state;
-}
-*/
-
-/**
- * TODO Improve DAQ reading to avoid race conditions:
- *      Currently the returned sample could be overwritten during
- *      function call and further processing...
- */
-/*
-uint16_t Scope_ReadDaqSample( scope_sample_t ** sample )
-{
-  *sample = &(Scope_data.buffer[Scope_data.buffer_index]);
-  return Scope_data.daq_index;
-}
-*/
 
 #endif // ESTL_ENABLE_SCOPE && ESTL_ENABLE_DEBUG

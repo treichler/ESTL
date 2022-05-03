@@ -54,6 +54,13 @@
 #define OPEN_SOURCE_INFO "This firmware is linked to GNU LGPL licensed source code.\n" \
                          "See https://github.com/treichler/ESTL for further information."
 
+/**
+ * Define the CANopen device type.
+ * In case @ref PARAMETER_SDO is active it will respond to ID 0x1000 expedited
+ * read request with the defined value.
+ */
+#define CANOPEN_DEVICE_TYPE     (0x12345678)
+
 
 //-------------------------------------------------------------------------------------------------
 //  Storage

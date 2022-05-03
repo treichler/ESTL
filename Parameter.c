@@ -195,6 +195,9 @@ struct {
  */
 const uint32_t access_secrets[] = {USER_ACCESS_SECRET, SERVICE_ACCESS_SECRET, PRODUCTION_ACCESS_SECRET, DEVELOPER_ACCESS_SECRET};
 
+/**
+ * Prepare number of parameter access secrets
+ */
 #define NR_OF_ACCESS_SECRETS    (sizeof(access_secrets)/sizeof(uint32_t))
 
 

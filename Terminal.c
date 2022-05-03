@@ -113,9 +113,9 @@ void Terminal_Init( const terminal_t * terminals, uint8_t number_of_terminals )
  * It also takes the currently processed terminal as an argument to forward
  * the output to the related stream.
  *
- * @param     terminal         The terminal where the message has to be printed.
- * @param     fmt              Format string.
- * @param     va_list          variables list.
+ * @param[in] terminal_data    The terminal where the message has to be printed.
+ * @param[in] fmt              Format string.
+ * @param[in] ...              variables list.
  */
 void Terminal_printf(const terminal_t * terminal_data, const char *fmt, ...)
 {
@@ -515,6 +515,18 @@ void Terminal_PrintErrorMessage( const terminal_t * terminal, error_code_t error
 }
 
 
+/**
+ * Print scope data to terminal.
+ * Okay, this function does not really print to terminal due to timing,
+ * however it locally saves relevant scope information to be printed
+ * as soon as Terminal_Task() is executed.
+ *
+ * @param index         The index of the currently to be printed scope sample.
+ * @param scope_sample  Pointer to the current scope sample.
+ * @return              Success of function call
+ *   @retval TRUE       Data will be printed.
+ *   @retval FALSE      Previous data pending, new one will not be printed.
+ */
 bool_t Terminal_PrintScope( uint16_t index, scope_sample_t * scope_sample )
 {
   if( Terminal_Data.scope_has_new_sample )

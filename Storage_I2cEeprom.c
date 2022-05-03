@@ -73,9 +73,15 @@
   #warning "EEPROM_BUS_WRITE_ADDRESS is set to default address"
 #endif
 
+
+/**
+ * @name Definitions for I2C EEprom access
+ * @{
+ */
 #define EEPROM_BUS_READ_ADDRESS         (0x01 | EEPROM_BUS_WRITE_ADDRESS)
 #define EEPROM_PAGE_INDEX_MASK          (EEPROM_PAGE_SIZE - 1)
 #define EEPROM_NR_OF_WRITE_RETRIES      (100)
+/** @} */
 
 
 inline int32_t StorageI2cEeprom_GetSize(void)

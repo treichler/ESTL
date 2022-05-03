@@ -45,7 +45,7 @@
  *   @retval    FALSE   Address is forbidden.
  *   @retval    TRUE    Address is white-listed.
  */
-bool_t DebugAccess_AddressIsWhiteListed( int32_t address );
+bool_t DebugAccess_AddressIsWhiteListed( uint32_t address );
 
 
 /**
@@ -54,11 +54,11 @@ bool_t DebugAccess_AddressIsWhiteListed( int32_t address );
  * @param index         Address table's index.
  * @return              Address stored at table's index.
  */
-int32_t DebugAccess_LookupTableGetAddress(int32_t index);
+uint32_t DebugAccess_LookupTableGetAddress( uint32_t index );
 
 
 /**
- * @} end of DEBUG
+ * @} end of DEBUG_ACCESS
  */
 
 #endif // __DEBUG_ACCESS_H__

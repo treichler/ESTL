@@ -36,26 +36,25 @@
 #include "Target.h"
 #include "Parameter.h"
 
+/**
+ * Terminal UART receive buffer size
+ */
 #define RECEIVE_BUFFER_SIZE (32)
 
 
 /**
  * This data structure contains the receive buffer and some local static variables.
  */
-struct Uart_data_t{
+struct {
   char          receive_buffer[RECEIVE_BUFFER_SIZE];
   uint16_t      receive_buffer_index;
-  int8_t        line_received;
-} Uart_data = {
-    .receive_buffer = {0},
-    .receive_buffer_index = 0,
-    .line_received = 0,
-};
+  bool_t        line_received;
+} Uart_data;
 
 
 void Uart_ReceiveChar(char c)
 {
-  if (Uart_data.line_received == 0)
+  if( Uart_data.line_received == FALSE )
   {
     Uart_data.receive_buffer[Uart_data.receive_buffer_index] = c;
 #if( ESTL_TERMINAL_LINE_BREAK == ESTL_TERMINAL_LINE_BREAK_LF )
@@ -63,14 +62,14 @@ void Uart_ReceiveChar(char c)
     {
       Uart_data.receive_buffer[Uart_data.receive_buffer_index] = '\0';
       Uart_data.receive_buffer_index = 0;
-      Uart_data.line_received = 1;
+      Uart_data.line_received = TRUE;
     }
 #elif( ESTL_TERMINAL_LINE_BREAK == ESTL_TERMINAL_LINE_BREAK_CR )
     if( (Uart_data.receive_buffer_index > 0) && (Uart_data.receive_buffer[Uart_data.receive_buffer_index] == '\r'))
     {
       Uart_data.receive_buffer[Uart_data.receive_buffer_index] = '\0';
       Uart_data.receive_buffer_index = 0;
-      Uart_data.line_received = 1;
+      Uart_data.line_received = TRUE;
     }
 #elif( ESTL_TERMINAL_LINE_BREAK == ESTL_TERMINAL_LINE_BREAK_CRLF )
     if( (Uart_data.receive_buffer_index > 0) &&
@@ -79,7 +78,7 @@ void Uart_ReceiveChar(char c)
     {
       Uart_data.receive_buffer[Uart_data.receive_buffer_index - 1] = '\0';
       Uart_data.receive_buffer_index = 0;
-      Uart_data.line_received = 1;
+      Uart_data.line_received = TRUE;
     }
 #else
 #error "ESTL_TERMINAL_LINE_BREAK not defined or invalid"
@@ -97,9 +96,9 @@ void Uart_ReceiveChar(char c)
 bool_t Uart_NewLineReceived(char ** rx_buffer)
 {
   *rx_buffer = Uart_data.receive_buffer;
-  if (Uart_data.line_received)
+  if( Uart_data.line_received )
   {
-    Uart_data.line_received = 0;
+    Uart_data.line_received = FALSE;
     return TRUE;
   }
   return FALSE;

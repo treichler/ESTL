@@ -36,7 +36,12 @@
 #include "Parameter.h"
 #include "Parameter_Sdo.h"
 
-// pseudo_code[31..16], mapped_error[15..0]
+
+/**
+ * Define CANopen pseudo SDO abort code.
+ * Upper bits [31..16] represent the pseudo abort code,
+ * lower bits [15..0] are used for mapping the local error code
+ */
 #define PSEUDO_SDO_ABORT_CODE (0x10100000)
 
 
@@ -181,9 +186,14 @@ error_code_t ParameterSdo_ReadTableEntry( uint8_t node_id, int16_t parameter_ind
 
 
 // Return values for CANopen_CallbackSdoReq() callback
-#define CAN_SDOREQ_NOTHANDLED     (0)     // process regularly, no impact
-#define CAN_SDOREQ_HANDLED_SEND   (1)     // processed in callback, auto-send returned msg
-#define CAN_SDOREQ_HANDLED_NOSEND (2)     // processed in callback, don't send response
+/**
+ * @name Return values for CANopen_CallbackSdoReq() callback
+ * @{
+ */
+#define CAN_SDOREQ_NOTHANDLED     (0)   //!<  Process regularly, no impact
+#define CAN_SDOREQ_HANDLED_SEND   (1)   //!<  Processed in callback, auto-send returned msg
+#define CAN_SDOREQ_HANDLED_NOSEND (2)   //!<  Processed in callback, don't send response
+/** @} */
 
 
 uint8_t ParameterSdo_CallbackSdoReq( uint8_t length_req, uint8_t *req_ptr, uint8_t *length_resp, uint8_t *resp_ptr )
@@ -338,6 +348,20 @@ uint8_t ParameterSdo_CallbackSdoReq( uint8_t length_req, uint8_t *req_ptr, uint8
         resp_ptr[7] = 0;
         return CAN_SDOREQ_HANDLED_SEND;
       }
+#ifdef CANOPEN_DEVICE_TYPE
+      else if( (index == 0x1000) ) // get device type
+      {
+        resp_ptr[0] = 0x43; // expedited response with 4 data bytes
+        resp_ptr[1] = req_ptr[1];
+        resp_ptr[2] = req_ptr[2];
+        resp_ptr[3] = req_ptr[3];
+        resp_ptr[4] = (uint8_t)(CANOPEN_DEVICE_TYPE >> 0);
+        resp_ptr[5] = (uint8_t)(CANOPEN_DEVICE_TYPE >> 8);
+        resp_ptr[6] = (uint8_t)(CANOPEN_DEVICE_TYPE >> 16);
+        resp_ptr[7] = (uint8_t)(CANOPEN_DEVICE_TYPE >> 24);
+        return CAN_SDOREQ_HANDLED_SEND;
+      }
+#endif
     }
     else if( (req_ptr[0] & 0xE0) == 0x60 ) // respond to segmented read
     {

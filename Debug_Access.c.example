@@ -72,7 +72,7 @@ static debug_address_range_t Debug_address_white_list[] = {
 //  Access functions
 //-------------------------------------------------------------------------------------------------
 
-int32_t DebugAccess_LookupTableGetAddress(int32_t index)
+uint32_t DebugAccess_LookupTableGetAddress( uint32_t index )
 {
   if ( index >= sizeof(Debug_address_table) )
     return 0;
@@ -83,7 +83,7 @@ int32_t DebugAccess_LookupTableGetAddress(int32_t index)
 
 #define NR_OF_WHITE_LIST_ENTRIES        (sizeof(Debug_address_white_list) / sizeof(debug_address_range_t))
 
-bool_t DebugAccess_AddressIsWhiteListed( int32_t address )
+bool_t DebugAccess_AddressIsWhiteListed( uint32_t address )
 {
   uint16_t i;
   for( i = 0; i < NR_OF_WHITE_LIST_ENTRIES; i ++ )
