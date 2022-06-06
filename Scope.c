@@ -67,9 +67,9 @@ typedef enum {
  */
 struct {
   scope_state_t  state;
-//  scope_state_t *daq;
   int8_t         trigger_channel;
   uint8_t        pre_trigger;
+  bool_t         is_beyond_trigger_level;
 
   uint16_t       pre_trigger_samples;
   uint16_t       post_trigger_samples;
@@ -114,6 +114,7 @@ error_code_t Scope_CmdParameterFunction(parameter_function_t parameter_function,
         // start scope
         Scope_data.pre_trigger_samples = (Scope_data.pre_trigger * ESTL_SCOPE_NR_OF_SAMPLES) / 100;
         Scope_data.post_trigger_samples = ESTL_SCOPE_NR_OF_SAMPLES - Scope_data.pre_trigger_samples;
+        Scope_data.is_beyond_trigger_level = FALSE;
         Scope_data.state = SCOPE_ARMED;
       }
       else if( 5 == *cmd )
@@ -203,13 +204,19 @@ void Scope_Task(void)
         else if( Scope_data.trigger_channel < 0 )
         {
           // falling edge
-          if( Scope_data.buffer[Scope_data.buffer_index].channel[-Scope_data.trigger_channel-1] <= Scope_data.trigger_level )
+          int32_t value = Scope_data.buffer[Scope_data.buffer_index].channel[-Scope_data.trigger_channel-1];
+          if(value > Scope_data.trigger_level)
+            Scope_data.is_beyond_trigger_level = TRUE;
+          if( Scope_data.is_beyond_trigger_level && (value <= Scope_data.trigger_level) )
             Scope_data.state = SCOPE_TRIGGERED;
         }
         else
         {
           // rising edge
-          if( Scope_data.buffer[Scope_data.buffer_index].channel[Scope_data.trigger_channel-1] >= Scope_data.trigger_level )
+          int32_t value = Scope_data.buffer[Scope_data.buffer_index].channel[Scope_data.trigger_channel-1];
+          if(value < Scope_data.trigger_level)
+            Scope_data.is_beyond_trigger_level = TRUE;
+          if( Scope_data.is_beyond_trigger_level && (value >= Scope_data.trigger_level) )
             Scope_data.state = SCOPE_TRIGGERED;
         }
       }
