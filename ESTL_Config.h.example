@@ -45,7 +45,9 @@
  * This define could also be set as compiler argument for example
  * when it is extracted from a version control system.
  */
+#ifndef FIRMWARE_REVISION
 #define FIRMWARE_REVISION       "0.1"
+#endif
 
 /**
  * Give some credit to the open source projects
@@ -206,6 +208,9 @@
 
 //-------------------------------------------------------------------------------------------------
 //  Error
+//
+//  In case Terminal is compiled into your project, it is recommended to also define
+//  ESTL_ENABLE_ERROR_MESSAGES for better readability of error codes.
 //-------------------------------------------------------------------------------------------------
 
 //#define ESTL_ENABLE_ERROR_MESSAGES
@@ -213,6 +218,8 @@
 
 //-------------------------------------------------------------------------------------------------
 //  Unit
+//
+//  If Terminal is compiled into your project, ESTL_ENABLE_UNIT_NAMES also has to be defined.
 //-------------------------------------------------------------------------------------------------
 
 #define ESTL_ENABLE_UNIT_NAMES

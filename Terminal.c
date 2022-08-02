@@ -212,7 +212,7 @@ void Terminal_Task(void)
               Sdo_ExpRead( i, 0x1000, 0x00, &device_type, &device_type_len );
               while( Sdo_ReqIsBusy() );
               if( Sdo_ReqIsFinished() )
-                Terminal_printf(terminal, "ID: %d\tType: 0x%08X", i, device_type);
+                Terminal_printf(terminal, "Node: %3d\tType: 0x%08X", i, device_type);
               // read SDO CANopen name
               Sdo_SegRead( i, 0x1008, 0x00, node_seg_buffer, sizeof(node_seg_buffer) );
               while( Sdo_ReqIsBusy() );
@@ -221,7 +221,7 @@ void Terminal_Task(void)
                 if( device_type_len )
                   Terminal_printf(terminal, "\tName: %s", node_seg_buffer);
                 else
-                  Terminal_printf(terminal, "ID: %d\tName: %s", i, node_seg_buffer);
+                  Terminal_printf(terminal, "Node: %3d\tName: %s", i, node_seg_buffer);
                 device_type_len = (uint8_t)TRUE;
                 // read SDO CANopen Firmware revision
                 Sdo_SegRead( i, 0x100A, 0x00, node_seg_buffer, sizeof(node_seg_buffer) );
@@ -256,7 +256,7 @@ void Terminal_Task(void)
 #ifdef ESTL_ENABLE_ERROR_MESSAGES
               Terminal_printf(terminal, "Could not fetch parameter from node %d: %s (error %d)" LINE_BREAK, node_id, Error_GetMessage(error_code), error_code);
 #else
-              Terminal_printf(terminal, "Could not fetch parameter from node %d (error %d)" LINE_BREAK, value, error_code);
+              Terminal_printf(terminal, "Could not fetch parameter from node %d (error %d)" LINE_BREAK, node_id, error_code);
 #endif
             }
             else

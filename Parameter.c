@@ -371,7 +371,7 @@ const parameter_table_entry_t System_Parameter_table[] = {
   [ESTL_PARAM_D_INDEX]     = {"d-index",    UNIT_NONE,            REPR_DEC,  LEVEL_2|R_W|HIDE|INFO,    DEBUG_MIN,  DEBUG_MIN,      DEBUG_MAX,   &Debug_IndexParameterFunction,  HELP_TEXT("The selected channel of the debug module")},
   [ESTL_PARAM_D_ADDR]      = {"d-addr",     UNIT_NONE,            REPR_HEX,  LEVEL_2|R_W|HIDE,         INT32_MIN,          0,      INT32_MAX,    &Debug_AddrParameterFunction,  HELP_TEXT("The physical address that should be accessed.\nIf mask is 0, then this is the index of the debug lookup-table.")},
   [ESTL_PARAM_D_MASK]      = {"d-mask",     UNIT_NONE,            REPR_HEX,  LEVEL_2|R_W|HIDE,         INT32_MIN,          0,      INT32_MAX,    &Debug_MaskParameterFunction,  HELP_TEXT("This masks the variable's access.")},
-  [ESTL_PARAM_D_DATA]      = {"d-data",     UNIT_NONE,            REPR_HEX,  LEVEL_2|R_W|HIDE,         INT32_MIN,          0,      INT32_MAX,    &Debug_DataParameterFunction,  HELP_TEXT("Access the variable.\nIf mask is 0, then the content of the debug lookup-table will be read.")},
+  [ESTL_PARAM_D_DATA]      = {"d-data",     UNIT_NONE,         REPR_HEX_08,  LEVEL_2|R_W|HIDE,         INT32_MIN,          0,      INT32_MAX,    &Debug_DataParameterFunction,  HELP_TEXT("Access the variable.\nIf mask is 0, then the content of the debug lookup-table will be read.")},
 #endif
 #if( defined(ESTL_ENABLE_SCOPE) && defined(ESTL_ENABLE_DEBUG) )
   [ESTL_PARAM_S_CMD]       = {"s-cmd",      UNIT_NONE,            REPR_DEC,  LEVEL_2|R_W|HIDE,         INT32_MIN,          0,      INT32_MAX,     &Scope_CmdParameterFunction,  HELP_TEXT(SCOPE_HELP_STR)},
