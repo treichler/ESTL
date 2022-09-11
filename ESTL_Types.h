@@ -65,9 +65,9 @@ typedef struct {
  *   @retval TRUE   Value fits to range.
  *   @retval FALSE  Value violates range.
  */
-static inline bool_t ValueInRange(int16_t value, range_t range)
+static inline bool_t ValueInRange(int16_t value, range_t * range)
 {
-  return ((value >= range.min) && (value <= range.max)) ? TRUE : FALSE;
+  return ((value >= range->min) && (value <= range->max)) ? TRUE : FALSE;
 }
 
 

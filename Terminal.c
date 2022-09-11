@@ -326,7 +326,7 @@ void Terminal_Task(void)
           {
             // try to find argument in CANopen parameter list
             parameter_index = Terminal_CanOpenFindIndexByName( argument );
-            if( ! ValueInRange(parameter_index, Terminal_Data.can_open_index_range) )
+            if( ! ValueInRange(parameter_index, &Terminal_Data.can_open_index_range) )
               Terminal_ParameterNotFoundMessage(terminal, argument);
             else
             {
@@ -383,7 +383,7 @@ void Terminal_Task(void)
         range = Parameter_GetIndexRange();
       }
       // check index range
-      if( ! ValueInRange(parameter_index, range) )
+      if( ! ValueInRange(parameter_index, &range) )
         Terminal_ParameterNotFoundMessage(terminal, rx_buffer);
 #else
       // try to find command in parameter list

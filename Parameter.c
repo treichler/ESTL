@@ -421,7 +421,7 @@ range_t Parameter_GetIndexRange(void)
 bool_t Parameter_IndexExists(int16_t parameter_index)
 {
   range_t index_range = Parameter_GetIndexRange();
-  return ValueInRange( parameter_index, index_range );
+  return ValueInRange( parameter_index, &index_range );
 }
 
 

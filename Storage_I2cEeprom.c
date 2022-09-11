@@ -97,7 +97,7 @@ error_code_t StorageI2cEeprom_NvMemWrite(uint16_t addr, uint8_t *data, uint16_t 
   error_code_t i2c_write_status;
   uint8_t eeprom_bus_write_address = EEPROM_BUS_WRITE_ADDRESS;
 
-  if((addr + size) >= EEPROM_SIZE)
+  if((addr + size) > EEPROM_SIZE)
     return STORAGE_DATA_TOO_BIG;
 
   page_addr = addr;
@@ -148,7 +148,7 @@ error_code_t StorageI2cEeprom_NvMemRead(uint16_t addr, uint8_t *data, uint16_t s
   uint8_t eeprom_bus_write_address, eeprom_bus_read_address;
   error_code_t i2c_access_status;
 
-  if((addr + size) >= EEPROM_SIZE)
+  if((addr + size) > EEPROM_SIZE)
     return STORAGE_DATA_TOO_BIG;
 
   block_addr = addr;
