@@ -60,11 +60,11 @@ static inline int32_t Storage_GetSize(void);
 
 
 struct {
-  error_code_t  init_status;
+  bool_t        is_initialized;
 #if (ESTL_STORAGE_HARDWARE == ESTL_STORAGE_HARDWARE_FAKE_NV_MEMORY)
   uint8_t       fake_nv_memory[256];
 #endif
-} Storage_data = {.init_status = STORAGE_NOT_INITIALIZED};
+} Storage_data;
 
 
 #ifndef ESTL_STORAGE_HARDWARE
@@ -163,20 +163,18 @@ error_code_t Storage_Init(void)
   uint16_t i;
   uint32_t addr = STORAGE_START_ADDRESS;
   if(NR_OF_STORAGE_ENTRIES != NR_OF_STORAGES)
-  {
-    Storage_data.init_status = STORAGE_ENUM_MISMATCH;
     return STORAGE_ENUM_MISMATCH;
-  }
+
   for (i = 0; i < NR_OF_STORAGES; i ++)
   {
     Storage_table[i].addr = addr;
     addr += Storage_table[i].size;
   }
   if( addr > Storage_GetSize() )
-    Storage_data.init_status = STORAGE_NVMEM_TOO_SMALL;
-  else
-    Storage_data.init_status = OK;
-  return Storage_data.init_status;
+    return STORAGE_NVMEM_TOO_SMALL;
+
+  Storage_data.is_initialized = TRUE;
+  return OK;
 }
 
 
@@ -185,9 +183,9 @@ error_code_t Storage_Init(void)
  */
 error_code_t Storage_Delete(storage_id_t index)
 {
-  if (OK != Storage_data.init_status)
-    return Storage_data.init_status;
-  if ( index >= NR_OF_STORAGES )
+  if( ! Storage_data.is_initialized )
+    return STORAGE_NOT_INITIALIZED;
+  if( index >= NR_OF_STORAGES )
     return INDEX_OUT_OF_BOUNDARY;
   return OK;
 }
@@ -197,21 +195,21 @@ error_code_t Storage_Write(storage_id_t index, void *data, int16_t size)
 {
   error_code_t write_status;
   storage_header_t header;
-  if (OK != Storage_data.init_status)
-    return Storage_data.init_status;
-  if ( index >= NR_OF_STORAGES )
+  if( ! Storage_data.is_initialized )
+    return STORAGE_NOT_INITIALIZED;
+  if( index >= NR_OF_STORAGES )
     return INDEX_OUT_OF_BOUNDARY;
-  if((size + sizeof(header)) > Storage_table[index].size )
+  if( (size + sizeof(header)) > Storage_table[index].size )
     return STORAGE_DATA_TOO_BIG;
   header.index = index;
   header.size = size;
   uint32_t crc = Crc_Crc32((uint8_t*)(&header) + 4, sizeof(storage_header_t) - 4, 0);
   header.crc32 = Crc_Crc32(data, size, crc);
   write_status = Storage_NvMemWrite(Storage_table[index].addr, (uint8_t*)(&header), sizeof(header));
-  if (OK != write_status)
+  if( OK != write_status )
     return write_status;
   write_status = Storage_NvMemWrite(Storage_table[index].addr + sizeof(header), data, size);
-  if (OK != write_status)
+  if( OK != write_status )
     return write_status;
   return OK;
 }
@@ -221,8 +219,8 @@ int32_t Storage_Read(storage_id_t index, void *data, int16_t size)
 {
   error_code_t read_status;
   storage_header_t header;
-  if( OK != Storage_data.init_status)
-    return (int32_t)Storage_data.init_status;
+  if( ! Storage_data.is_initialized )
+    return STORAGE_NOT_INITIALIZED;
   if( index >= NR_OF_STORAGES )
     return (int32_t)INDEX_OUT_OF_BOUNDARY;
   read_status = Storage_NvMemRead(Storage_table[index].addr, (uint8_t*)(&header), sizeof(header));

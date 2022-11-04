@@ -43,7 +43,8 @@ typedef struct {
 } scope_pdo_sample_t;
 
 
-void ScopePdo_ReceiveDaq( uint8_t node_id, uint8_t * rx );
-void ScopePdo_PrepareDaqTx( uint8_t * tx, int32_t value, uint8_t channel_index, uint16_t sample_index );
+extern void ScopePdo_Init( bool_t (* PrintFunction)(scope_pdo_sample_t*) );
+extern void ScopePdo_ReceiveDaq( uint8_t node_id, uint8_t * rx );
+extern void ScopePdo_PrepareDaqTx( uint8_t * tx, int32_t value, uint8_t channel_index, uint16_t sample_index );
 
 #endif // __SCOPE_PDO_H__

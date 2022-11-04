@@ -80,8 +80,8 @@
 // Prepare parameter revision for parameter table
 #define PARAMETER_REVISION_MINOR_MASK           ((1 << PARAMETER_REVISION_COUNTER_BIT_LENGTH) - 1)
 #define PARAMETER_REVISION_MAJOR_MASK           (((1 << PARAMETER_REVISION_COUNTER_BIT_LENGTH) - 1) << PARAMETER_REVISION_COUNTER_BIT_LENGTH)
-#define PAR_REV_NR ( ((PARAMETER_REVISION_MAJOR << PARAMETER_REVISION_COUNTER_BIT_LENGTH) && PARAMETER_REVISION_MAJOR_MASK) | \
-                     (PARAMETER_REVISION_MINOR & PARAMETER_REVISION_MINOR_MASK) )
+#define PAR_REV_NR ( ((1UL * PARAMETER_REVISION_MAJOR << PARAMETER_REVISION_COUNTER_BIT_LENGTH) & PARAMETER_REVISION_MAJOR_MASK) | \
+                     (1UL * PARAMETER_REVISION_MINOR & PARAMETER_REVISION_MINOR_MASK) )
 
 
 // Check firmware name
@@ -91,9 +91,9 @@
 #endif
 
 // Check firmware revision
-#ifndef FIRMWARE_REVISION
-#warning "FIRMWARE_REVISION is not defined."
-#define FIRMWARE_REVISION ""
+#ifndef FIRMWARE_VERSION
+#warning "FIRMWARE_VERSION is not defined."
+#define FIRMWARE_VERSION ""
 #endif
 
 // Prepare Git information string
@@ -117,7 +117,7 @@
 #endif
 
 // prepare firmware information built
-#define SERVICE_HELP_STR        (FIRMWARE_NAME " " FIRMWARE_REVISION \
+#define SERVICE_HELP_STR        (FIRMWARE_NAME " " FIRMWARE_VERSION \
                                  "\nBuilt: " __DATE__ ", " __TIME__ \
                                  GIT_INFO_STR \
                                  SVN_INFO_STR \
@@ -184,10 +184,12 @@ error_code_t Parameter_LoadDefaultData(void);
  * Parameter module's local data structure, containing static variables.
  */
 struct {
-  error_code_t  init_error;     //!<  Parameter initialization error code
-  int8_t        access_level;   //!<  Currently activated parameter access level
-  uint32_t      access_secret;  //!<  Current access level's secret key
-  uint32_t      table_crc;      //!<  Checksum over the whole parameter table
+  error_code_t  init_error;                             //!<  Parameter initialization error code
+  bool_t        show_table_crc;                         //!<  Show table CRC on sys-cmd reading
+  int8_t        access_level;                           //!<  Currently activated parameter access level
+  uint32_t      access_secret;                          //!<  Current access level's secret key
+  uint32_t      table_crc;                              //!<  Checksum over the whole parameter table
+  void          (* serialNumberCallback)(uint32_t);     //!<  Pointer to serial-number-callback function
 } Parameter_Data;
 
 /**
@@ -289,12 +291,12 @@ error_code_t Parameter_SysInfoFunction(parameter_function_t parameter_function, 
 /**
  * Help text for Parameter_SysCmdFunction()
  */
-#define SYSTEM_CMD_HELP_STR     ("Value shows parameter table CRC\n" \
-                                 "System commands:\n"                \
+#define SYSTEM_CMD_HELP_STR     ("System commands:\n"                \
                                  "1: Save parameter\n"               \
                                  "2: Initialize parameter\n"         \
                                  "3: Load default parameter\n"       \
-                                 "4: Parameter init status")
+                                 "4: Parameter init status\n"        \
+                                 "5: Show table CRC on next read")
 
 /**
  * This function is related to the system parameter "sys-cmd".
@@ -332,15 +334,47 @@ error_code_t Parameter_SysCmdFunction(parameter_function_t parameter_function, i
       case 4:
         error_code = Parameter_Data.init_error;
         break;
+      case 5:
+        Parameter_Data.show_table_crc = TRUE;
+        break;
       default:
+        Parameter_Data.show_table_crc = FALSE;
+        error_code = VALUE_INVALID;
         break;
     }
   }
   else if( parameter_function == PARAMETER_READ )
   {
-    *value = Parameter_Data.table_crc;
+    if( Parameter_Data.show_table_crc )
+      *value = Parameter_Data.table_crc;
+    else
+      *value = 0;
   }
   return error_code;
+}
+
+
+/**
+ * Serial-number function related to system parameter "SN"
+ * In case of parameter init respectively parameter write and if there is a
+ * serial-number-callback-function initialized, this function is called with
+ * the current serial number.
+ *
+ * @param     parameter_function     How is this function called.
+ * @param     value                  Pointer to related value in parameter array
+ * @return                           Error code, always returns OK
+ */
+error_code_t Parameter_SerialNumberFunction(parameter_function_t parameter_function, int32_t * value)
+{
+  if( (NULL != Parameter_Data.serialNumberCallback) && ((PARAMETER_INIT == parameter_function) || (PARAMETER_WRITE == parameter_function)) )
+    Parameter_Data.serialNumberCallback( (uint32_t)(*value) );
+  return OK;
+}
+
+
+void Parameter_SetSerialNumberCallback( void (* serialNumberCallback)(uint32_t) )
+{
+  Parameter_Data.serialNumberCallback = serialNumberCallback;
 }
 
 
@@ -353,6 +387,7 @@ error_code_t Parameter_SysCmdFunction(parameter_function_t parameter_function, i
  */
 const parameter_table_entry_t System_Parameter_table[] = {
   //                           name         unit            representation       control flags           minimum     nominal         maximum                 function pointer   information/help
+  [ESTL_PARAM_SN]          = {"SN",         UNIT_NONE,         REPR_HEX_08,  LEVEL_3|R_W|NVMEM,        INT32_MIN,          0,      INT32_MAX, &Parameter_SerialNumberFunction,  HELP_TEXT("Serial number")},
   [ESTL_PARAM_SYS_INFO]    = {"sys-info",   UNIT_NONE,            REPR_HEX,  LEVEL_0|R_O|NVMEM,        INT32_MIN, PAR_REV_NR,      INT32_MAX,      &Parameter_SysInfoFunction,  SERVICE_HELP_STR},
   [ESTL_PARAM_SYS_KEY]     = {"sys-key",    UNIT_NONE,            REPR_DEC,  LEVEL_0|R_W|NVMEM,        INT32_MIN,          0,      INT32_MAX,       &Parameter_SysKeyFunction,  HELP_TEXT("Parameter access key. The current value represents the access level.")},
   [ESTL_PARAM_SYS_CMD]     = {"sys-cmd",    UNIT_NONE,            REPR_HEX,  LEVEL_0|R_W,              INT32_MIN,          0,      INT32_MAX,       &Parameter_SysCmdFunction,  HELP_TEXT(SYSTEM_CMD_HELP_STR)},
@@ -428,6 +463,12 @@ bool_t Parameter_IndexExists(int16_t parameter_index)
 uint32_t Parameter_GetTableCrc(void)
 {
   return Parameter_Data.table_crc;
+}
+
+
+uint32_t Parameter_GetSerialNumber(void)
+{
+  return Parameter_array[ SYSTEM_PARAMETER_TABLE_NR_OF_ENTRIES + PARAM_SN];
 }
 
 
@@ -518,12 +559,12 @@ error_code_t Parameter_ReadValue(int16_t parameter_index, int32_t * value)
   if( OK != error )
     return error;
 
-  if( ! Parameter_EntryIsAccessible(parameter_table_entry) )
-    return PARAMETER_ACCESS_DENIED;
-
   if (parameter_table_entry->parameterFunction != 0)
     error = parameter_table_entry->parameterFunction(PARAMETER_READ, &Parameter_array[SYSTEM_PARAMETER_TABLE_NR_OF_ENTRIES + parameter_index]);
   *value = Parameter_array[SYSTEM_PARAMETER_TABLE_NR_OF_ENTRIES + parameter_index];
+
+  if( (! Parameter_EntryIsAccessible(parameter_table_entry)) && (parameter_table_entry->flags & HIDE) )
+    return PARAMETER_ACCESS_DENIED;
   return error;
 }
 
@@ -721,8 +762,16 @@ error_code_t Parameter_LoadNvData(void)
       // abort if parameter function call fails
       if( error == PARAMETER_REV_MAJOR_CHANGE )
         return error;
-      if( error == PARAMETER_REV_MINOR_CHANGE )
+      else if( error == PARAMETER_REV_MINOR_CHANGE )
         init_status = error;
+/*
+      else if( error != OK )
+      {
+        // TODO if parameter function call causes an error during initialization
+        //      it might be better to initialize with default value...
+        init_status = error;
+      }
+*/
 /*
       // TODO in case of IMAGE_REV_MAJOR_CHANGE call save() to store default values to nv-memory
       if (init_status == PARAMETER_REV_MAJOR_CHANGE)

@@ -196,6 +196,15 @@ error_code_t ParameterSdo_ReadTableEntry( uint8_t node_id, int16_t parameter_ind
 /** @} */
 
 
+void ParameterSdo_MsgSetVal( uint8_t * msg, uint32_t value )
+{
+  msg[4] = value;
+  msg[5] = value >> 8;
+  msg[6] = value >> 16;
+  msg[7] = value >> 24;
+}
+
+
 uint8_t ParameterSdo_CallbackSdoReq( uint8_t length_req, uint8_t *req_ptr, uint8_t *length_resp, uint8_t *resp_ptr )
 {
   if( 8 == length_req )
@@ -207,15 +216,20 @@ uint8_t ParameterSdo_CallbackSdoReq( uint8_t length_req, uint8_t *req_ptr, uint8
     uint16_t index = req_ptr[1] | (req_ptr[2] << 8);
     int16_t  parameter_index = (int16_t)( ((index - 0x2000) << 2) | (req_ptr[3] >> 6) );
     uint8_t  parameter_sub_index = req_ptr[3] &= 0x0F;
+
+    resp_ptr[1] = req_ptr[1];
+    resp_ptr[2] = req_ptr[2];
+    resp_ptr[3] = req_ptr[3];
+
     if( (req_ptr[0] & 0xE0) == 0x40 ) // expedited or segmented read
     {
       if( (index >= 0x2000) && (index <= 0x5FFF) )
       {
-        if( ! Parameter_IndexExists(parameter_index) )
+        parameter_data_t parameter_data;
+        error_code_t error = Parameter_ReadData(parameter_index, &parameter_data);
+        if( ! ((OK == error) || (PARAMETER_HIDDEN == error)) )
           return CAN_SDOREQ_NOTHANDLED;
 
-        parameter_data_t parameter_data;
-        Parameter_ReadData(parameter_index, &parameter_data);
         if( (SUBIDX_PARAM_NAME == parameter_sub_index) || (SUBIDX_PARAM_INFO == parameter_sub_index) )
         {
           // segmented read
@@ -229,13 +243,7 @@ uint8_t ParameterSdo_CallbackSdoReq( uint8_t length_req, uint8_t *req_ptr, uint8
           buffer_len = strlen( (char*)read_buffer ) + 1;
           *length_resp = 8;
           resp_ptr[0] = 0x41; // set size indicated
-          resp_ptr[1] = req_ptr[1];
-          resp_ptr[2] = req_ptr[2];
-          resp_ptr[3] = req_ptr[3];
-          resp_ptr[4] = buffer_len & 0xFF;
-          resp_ptr[5] = buffer_len >> 8;
-          resp_ptr[6] = 0;
-          resp_ptr[7] = 0;
+          ParameterSdo_MsgSetVal( resp_ptr, buffer_len );
           return CAN_SDOREQ_HANDLED_SEND;
         }
         else
@@ -314,13 +322,7 @@ uint8_t ParameterSdo_CallbackSdoReq( uint8_t length_req, uint8_t *req_ptr, uint8
               break;
           }
           resp_ptr[0] = (((4 - len) & 0x3) << 2) | 0x43;
-          resp_ptr[1] = req_ptr[1];
-          resp_ptr[2] = req_ptr[2];
-          resp_ptr[3] = req_ptr[3];
-          resp_ptr[4] = payload;
-          resp_ptr[5] = payload >> 8;
-          resp_ptr[6] = payload >> 16;
-          resp_ptr[7] = payload >> 24;
+          ParameterSdo_MsgSetVal( resp_ptr, payload );
           return CAN_SDOREQ_HANDLED_SEND;
         }
       }
@@ -328,7 +330,7 @@ uint8_t ParameterSdo_CallbackSdoReq( uint8_t length_req, uint8_t *req_ptr, uint8
       {
         // segmented read -- response to product-name and revision
         const char * firmware_name = FIRMWARE_NAME;
-        const char * firmware_revision = FIRMWARE_REVISION;
+        const char * firmware_revision = FIRMWARE_VERSION;
         read_ofs = 0;
 
         if( index == 0x1008 )     // FIRMWARE_NAME
@@ -339,26 +341,48 @@ uint8_t ParameterSdo_CallbackSdoReq( uint8_t length_req, uint8_t *req_ptr, uint8
         buffer_len = strlen( (char*)read_buffer ) + 1;
         *length_resp = 8;
         resp_ptr[0] = 0x41; // set size indicated
-        resp_ptr[1] = req_ptr[1];
-        resp_ptr[2] = req_ptr[2];
-        resp_ptr[3] = req_ptr[3];
-        resp_ptr[4] = buffer_len & 0xFF;
-        resp_ptr[5] = buffer_len >> 8;
-        resp_ptr[6] = 0;
-        resp_ptr[7] = 0;
+        ParameterSdo_MsgSetVal( resp_ptr, buffer_len );
         return CAN_SDOREQ_HANDLED_SEND;
       }
 #ifdef CANOPEN_DEVICE_TYPE
       else if( (index == 0x1000) ) // get device type
       {
         resp_ptr[0] = 0x43; // expedited response with 4 data bytes
-        resp_ptr[1] = req_ptr[1];
-        resp_ptr[2] = req_ptr[2];
-        resp_ptr[3] = req_ptr[3];
-        resp_ptr[4] = (uint8_t)(CANOPEN_DEVICE_TYPE >> 0);
-        resp_ptr[5] = (uint8_t)(CANOPEN_DEVICE_TYPE >> 8);
-        resp_ptr[6] = (uint8_t)(CANOPEN_DEVICE_TYPE >> 16);
-        resp_ptr[7] = (uint8_t)(CANOPEN_DEVICE_TYPE >> 24);
+        ParameterSdo_MsgSetVal( resp_ptr, CANOPEN_DEVICE_TYPE );
+        return CAN_SDOREQ_HANDLED_SEND;
+      }
+#endif
+#if( defined(CANOPEN_VENDOR_ID) && defined(CANOPEN_PRODUCT_CODE) && defined(CANOPEN_REVISION_NUMBER) )
+      else if( 0x1018 == index ) // get device type
+      {
+        uint8_t sub_index = req_ptr[3];
+        resp_ptr[0] = 0x43; // expedited response with 4 data bytes
+        if( 0x00 == sub_index )
+        {
+          // number of entries (1..4)
+          resp_ptr[0] = 0x4F; // expedited response with 1 data bytes
+          ParameterSdo_MsgSetVal( resp_ptr, 4 );
+        }
+        else if( 0x01 == sub_index )
+        {
+          // Vendor ID
+          ParameterSdo_MsgSetVal( resp_ptr, CANOPEN_VENDOR_ID );
+        }
+        else if( 0x02 == sub_index )
+        {
+          // Product code
+          ParameterSdo_MsgSetVal( resp_ptr, CANOPEN_PRODUCT_CODE );
+        }
+        else if( 0x03 == sub_index )
+        {
+          // Revision Number
+          ParameterSdo_MsgSetVal( resp_ptr, CANOPEN_REVISION_NUMBER );
+        }
+        else if( 0x04 == sub_index )
+        {
+          // Serial number
+          ParameterSdo_MsgSetVal( resp_ptr, Parameter_GetSerialNumber() );
+        }
         return CAN_SDOREQ_HANDLED_SEND;
       }
 #endif
@@ -388,23 +412,17 @@ uint8_t ParameterSdo_CallbackSdoReq( uint8_t length_req, uint8_t *req_ptr, uint8
       if( OK == error_code )
       {
         resp_ptr[0] = 0x60;
-        resp_ptr[4] = 0;
-        resp_ptr[5] = 0;
-        resp_ptr[6] = 0;
-        resp_ptr[7] = 0;
+        ParameterSdo_MsgSetVal( resp_ptr, 0 );
       }
       else
       {
         resp_ptr[0] = 0x80;
         // map parameter access error to SDO pseudo abort code
-        resp_ptr[4] = (uint8_t)error_code;
-        resp_ptr[5] = (uint8_t)(((uint16_t)error_code) >> 8);
+        resp_ptr[4] = (uint8_t)(0xFF & (error_code >> 0));
+        resp_ptr[5] = (uint8_t)(0xFF & (error_code >> 8));
         resp_ptr[6] = (PSEUDO_SDO_ABORT_CODE >> 16) & 0xFF;
         resp_ptr[7] = (PSEUDO_SDO_ABORT_CODE >> 24) & 0xFF;
       }
-      resp_ptr[1] = req_ptr[1];
-      resp_ptr[2] = req_ptr[2];
-      resp_ptr[3] = req_ptr[3];
       return CAN_SDOREQ_HANDLED_SEND;
     }
   }

@@ -87,7 +87,8 @@
  * System Parameter Table's indices
  */
 enum {
-  ESTL_PARAM_SYS_INFO = 0,                   //!< keep this always as first index
+  ESTL_PARAM_SN = 0,                         //!< @def ESTL_PARAM_SN system's serial number
+  ESTL_PARAM_SYS_INFO,                       //!<
   ESTL_PARAM_SYS_KEY,                        //!<
   ESTL_PARAM_SYS_CMD,                        //!<
 #ifdef ESTL_ENABLE_RF
@@ -118,6 +119,7 @@ enum {
  * System Parameters' access indices
  */
 enum {
+  PARAM_SN               = (-1 - ESTL_PARAM_SN),
   PARAM_SYS_INFO         = (-1 - ESTL_PARAM_SYS_INFO),
   PARAM_SYS_KEY          = (-1 - ESTL_PARAM_SYS_KEY),                        //!<
   PARAM_SYS_CMD          = (-1 - ESTL_PARAM_SYS_CMD),
@@ -147,6 +149,13 @@ enum {
 
 /**
  * @name  Parameter flags
+ *
+ * Access levels are additive, which means that access to a dedicated level
+ * also grants access to all lower levels, e.g. one who has access to level 3
+ * has also access to levels 2, 1 and 0.
+ * Higher level parameter entries are by default read-only to to lower level
+ * users.
+ * To explicitly prohibit read-access additionally the HIDE-flag has to be set.
  * @{
  */
 #define LEVEL_MASK      (0x07)  //!< Access level mask, needs to be aligned with LSB
@@ -220,6 +229,17 @@ error_code_t Parameter_Init(void);
 
 
 /**
+ * Set a serial-number callback function, which is called every time the
+ * related system parameter "SN" is written or initialized.
+ * The callback's only argument holds the serial-number which has to fit into
+ * the uint32_t range.
+ *
+ * @param       serialNumberCallback    Serial-number callback function
+ */
+void Parameter_SetSerialNumberCallback( void (* serialNumberCallback)(uint32_t) );
+
+
+/**
  * Check if the currently activated parameter access level is developer access.
  *
  * @return
@@ -254,6 +274,14 @@ bool_t Parameter_IndexExists(int16_t parameter_index);
  * @return  Checksum over the whole parameter table
  */
 uint32_t Parameter_GetTableCrc(void);
+
+
+/**
+ * Get serial number
+ *
+ * @return  Serial number
+ */
+uint32_t Parameter_GetSerialNumber(void);
 
 
 /**

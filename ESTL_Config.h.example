@@ -41,12 +41,12 @@
 #define FIRMWARE_NAME           "My Awesome Project"
 
 /**
- * Optionally define the project's revision.
+ * Optionally define the project's firmware version.
  * This define could also be set as compiler argument for example
  * when it is extracted from a version control system.
  */
-#ifndef FIRMWARE_REVISION
-#define FIRMWARE_REVISION       "0.1"
+#ifndef FIRMWARE_VERSION
+#define FIRMWARE_VERSION        "0.1"
 #endif
 
 /**
@@ -56,12 +56,35 @@
 #define OPEN_SOURCE_INFO "This firmware is linked to GNU LGPL licensed source code.\n" \
                          "See https://github.com/treichler/ESTL for further information."
 
+
+//-------------------------------------------------------------------------------------------------
+//  CANopen
+//-------------------------------------------------------------------------------------------------
+
 /**
- * Define the CANopen device type.
+ * @name CANopen device type.
+ *
  * In case @ref PARAMETER_SDO is active it will respond to ID 0x1000 expedited
  * read request with the defined value.
  */
 #define CANOPEN_DEVICE_TYPE     (0x12345678)
+
+/**
+ * @name CANopen identity object.
+ *
+ * In case @ref PARAMETER_SDO is active it will respond to ID 0x1018.
+ * The object consists of 5 sub-entries:
+ *   0. Number of entries, always responds 4
+ *   1. Vendor ID, responds @ref CANOPEN_VENDOR_ID
+ *   2. Product code, responds @ref CANOPEN_PRODUCT_CODE
+ *   3. Revision number, responds @ref CANOPEN_REVISION_NUMBER
+ *   4. Serial Number, responds system's serial number (parameter @ref ESTL_PARAM_SN)
+ * @{
+ */
+#define CANOPEN_VENDOR_ID       (0x89ABCDEF)    //!<  @def CANOPEN_VENDOR_ID Vendor ID
+#define CANOPEN_PRODUCT_CODE    (0x98765432)    //!<  @def CANOPEN_PRODUCT_CODE Product code
+#define CANOPEN_REVISION_NUMBER (0xABCD1234)    //!<  @def CANOPEN_REVISION_NUMBER Revision Number
+/** @} */
 
 
 //-------------------------------------------------------------------------------------------------

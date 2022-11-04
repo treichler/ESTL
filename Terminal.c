@@ -79,22 +79,44 @@ struct {
 } Terminal_Data;
 
 
+typedef struct {
+  const terminal_t * terminal;
+  char *rx_buffer;
+  char *argument;
+} Terminal_Task_t;
+
+
 //-------------------------------------------------------------------------------------------------
 //  Local function prototypes
 //-------------------------------------------------------------------------------------------------
 
-void Terminal_PrintParameterDetails( const terminal_t * terminal, parameter_data_t * parameter_data, int32_t value, const char * info );
-void Terminal_ParameterNotFoundMessage( const terminal_t * terminal, char *rx_buffer );
-void Terminal_PrintErrorMessage( const terminal_t * terminal, error_code_t error );
-bool_t Terminal_PrintScope( uint16_t index, scope_sample_t * scope_sample );
+static void Terminal_printf(const terminal_t * terminal_data, const char *fmt, ...);
+
+#if( defined(ESTL_ENABLE_TERMINAL_REMOTE_PARAMETER) )
+static inline void Terminal_HandleCmdRemote( Terminal_Task_t * task );
+#endif
+static inline void Terminal_HandleCmdHelp( Terminal_Task_t * task );
+static inline void Terminal_HandleCmd( Terminal_Task_t * task );
+
+static void Terminal_PrintParameterDetails( const terminal_t * terminal, parameter_data_t * parameter_data, int32_t value, const char * info );
+static void Terminal_ParameterNotFoundMessage( const terminal_t * terminal, char *rx_buffer );
+static void Terminal_PrintErrorMessage( const terminal_t * terminal, error_code_t error );
+
+#if( defined(ESTL_ENABLE_SCOPE) && defined(ESTL_ENABLE_DEBUG) )
+static bool_t Terminal_PrintScope( uint16_t index, scope_sample_t * scope_sample );
+#endif
 
 
 #if( defined(ESTL_ENABLE_TERMINAL_REMOTE_PARAMETER) )
-bool_t Terminal_PrintPdoScope( scope_pdo_sample_t * scope_pdo_sample );
-error_code_t Terminal_InitCanOpenTable( const terminal_t * terminal, uint8_t node_id );
-int16_t Terminal_CanOpenFindIndexByName( char * parameter_name );
+static bool_t Terminal_PrintPdoScope( scope_pdo_sample_t * scope_pdo_sample );
+static error_code_t Terminal_InitCanOpenTable( const terminal_t * terminal, uint8_t node_id );
+static int16_t Terminal_CanOpenFindIndexByName( char * parameter_name );
 #endif
 
+
+//-------------------------------------------------------------------------------------------------
+//  Implementation
+//-------------------------------------------------------------------------------------------------
 
 void Terminal_Init( const terminal_t * terminals, uint8_t number_of_terminals )
 {
@@ -105,6 +127,90 @@ void Terminal_Init( const terminal_t * terminals, uint8_t number_of_terminals )
   // connect scope data print function
   Scope_Init( Terminal_PrintScope );
 #endif
+#if( defined(ESTL_ENABLE_TERMINAL_REMOTE_PARAMETER) )
+  // connect PDO scope data print function
+  ScopePdo_Init( Terminal_PrintPdoScope );
+#endif
+}
+
+
+void Terminal_Task(void)
+{
+  Terminal_Task_t task;
+  uint16_t terminal_index;
+
+  // iterate connected terminals
+  for( terminal_index = 0; terminal_index < Terminal_Data.number_of_terminals; terminal_index ++ )
+  {
+    task.terminal = &(Terminal_Data.terminals[terminal_index]);
+
+#if( defined(ESTL_ENABLE_SCOPE) && defined(ESTL_ENABLE_DEBUG) )
+    // check if DAQ to be printed
+    if( Terminal_Data.scope_has_new_sample )
+    {
+      uint16_t i;
+      Terminal_printf( task.terminal, "0x%04X", Terminal_Data.scope_sample_index );
+      for( i = 0; i < ESTL_DEBUG_NR_OF_ENTRIES; i ++ )
+      {
+        Terminal_printf( task.terminal, "\t%d", Terminal_Data.scope_sample->channel[i] );
+      }
+      Terminal_printf( task.terminal, LINE_BREAK );
+      Terminal_Data.scope_has_new_sample = FALSE;
+    }
+#endif
+
+#if( defined(ESTL_ENABLE_TERMINAL_REMOTE_PARAMETER) )
+    // check if remote DAQ to be printed
+    if( Terminal_Data.scope_pdo_has_new_sample )
+    {
+      uint8_t i;
+      Terminal_printf( task.terminal, "%d\t0x%04X", Terminal_Data.scope_pdo_sample->node_id, Terminal_Data.scope_pdo_sample->index );
+      for( i = 0; (i < Terminal_Data.scope_pdo_sample->nr_channels) && (i < SCOPE_PDO_MAX_NR_OF_CHANNELS); i ++ )
+      {
+        if( (1 << i) & Terminal_Data.scope_pdo_sample->validity_bits )
+          Terminal_printf( task.terminal, "\t%d", Terminal_Data.scope_pdo_sample->sample[i] );
+        else
+          Terminal_printf( task.terminal, "\t##" );
+      }
+      Terminal_printf( task.terminal, LINE_BREAK );
+      Terminal_Data.scope_pdo_has_new_sample = FALSE;
+    }
+#endif
+
+    // check if new data is available
+    if( task.terminal->ReceivedNewLine( &task.rx_buffer ) )
+    {
+      // split string to command and argument
+      task.argument = task.rx_buffer;
+      while( (*task.argument != ' ') && (*task.argument != '\0') )
+        task.argument ++;
+      if( *task.argument == ' ' )
+      {
+        *task.argument = '\0';
+        task.argument ++;
+      }
+
+#if( defined(ESTL_ENABLE_TERMINAL_REMOTE_PARAMETER) )
+      // check if we received 'remote'
+      if( 0 == strcmp(task.rx_buffer, "remote") )
+      {
+        Terminal_HandleCmdRemote( &task );
+        return;
+      } // we received 'remote'
+#endif
+
+      // check if we received 'help'
+      if( 0 == strcmp(task.rx_buffer, "help") )
+      {
+        Terminal_HandleCmdHelp( &task );
+        return;
+      } // we received 'help'
+
+      Terminal_HandleCmd( &task );
+
+    } // new data was available
+
+  }
 }
 
 
@@ -126,160 +232,110 @@ void Terminal_printf(const terminal_t * terminal_data, const char *fmt, ...)
 }
 
 
-void Terminal_Task(void)
-{
-  uint16_t terminal_index;
-
-  // iterate connected terminals
-  for( terminal_index = 0; terminal_index < Terminal_Data.number_of_terminals; terminal_index ++ )
-  {
-    const terminal_t * terminal = &(Terminal_Data.terminals[terminal_index]);
-    char *rx_buffer, *argument;
-
-#if( defined(ESTL_ENABLE_SCOPE) && defined(ESTL_ENABLE_DEBUG) )
-    // check if DAQ to be printed
-    if( Terminal_Data.scope_has_new_sample )
-    {
-      uint16_t i;
-      Terminal_printf( terminal, "0x%04X", Terminal_Data.scope_sample_index );
-      for( i = 0; i < ESTL_DEBUG_NR_OF_ENTRIES; i ++ )
-      {
-        Terminal_printf( terminal, "\t%d", Terminal_Data.scope_sample->channel[i] );
-      }
-      Terminal_printf( terminal, LINE_BREAK );
-      Terminal_Data.scope_has_new_sample = FALSE;
-    }
-#endif
-
 #if( defined(ESTL_ENABLE_TERMINAL_REMOTE_PARAMETER) )
-    // check if remote DAQ to be printed
-    if( Terminal_Data.scope_pdo_has_new_sample )
+void Terminal_HandleCmdRemote( Terminal_Task_t * task )
+{
+  error_code_t error_code;
+  if( *task->argument == '\0' )
+  {
+    if( Terminal_Data.is_remote )
+      Terminal_printf(task->terminal, "connected to node %d" LINE_BREAK, Terminal_Data.node_id);
+    else
+      Terminal_printf(task->terminal, "off" LINE_BREAK);
+  }
+  else
+  {
+    if( 0 == strcmp(task->argument, "scan") )
     {
       uint8_t i;
-      Terminal_printf( terminal, "%d\t0x%04X", Terminal_Data.scope_pdo_sample->node_id, Terminal_Data.scope_pdo_sample->index );
-      for( i = 0; (i < Terminal_Data.scope_pdo_sample->nr_channels) && (i < SCOPE_PDO_MAX_NR_OF_CHANNELS); i ++ )
+      uint8_t j = Sdo_GetNrOfNodes();
+      char node_seg_buffer[32];
+      Terminal_printf(task->terminal, "Scanning %d remote nodes..." LINE_BREAK, j);
+      for( i = 0; i < j; i ++ )
       {
-        if( (1 << i) & Terminal_Data.scope_pdo_sample->validity_bits )
-          Terminal_printf( terminal, "\t%d", Terminal_Data.scope_pdo_sample->sample[i] );
-        else
-          Terminal_printf( terminal, "\t##" );
+        int32_t exp_data;
+        uint8_t exp_data_len = 0;
+        // read SDO CANopen device type
+        Sdo_ExpRead( i, 0x1000, 0x00, &exp_data, &exp_data_len );
+        while( Sdo_ReqIsBusy() );
+        if( Sdo_ReqIsFinished() )
+          Terminal_printf(task->terminal, "Node: %3d\tType: 0x%08X", i, exp_data);
+        // read SDO CANopen name
+        Sdo_SegRead( i, 0x1008, 0x00, node_seg_buffer, sizeof(node_seg_buffer) );
+        while( Sdo_ReqIsBusy() );
+        if( Sdo_ReqIsFinished() )
+        {
+          if( exp_data_len )
+            Terminal_printf(task->terminal, "\tName: %s", node_seg_buffer);
+          else
+            Terminal_printf(task->terminal, "Node: %3d\tName: %s", i, node_seg_buffer);
+          // read SDO CANopen Firmware revision
+          Sdo_SegRead( i, 0x100A, 0x00, node_seg_buffer, sizeof(node_seg_buffer) );
+          while( Sdo_ReqIsBusy() );
+          if( Sdo_ReqIsFinished() )
+            Terminal_printf(task->terminal, "\tRev: %s", node_seg_buffer);
+          // read SDO CANopen serial number
+          Sdo_ExpRead( i, 0x1018, 0x00, &exp_data, &exp_data_len );
+          while( Sdo_ReqIsBusy() );
+          if( Sdo_ReqIsFinished() && (1 == exp_data_len) && (4 == (exp_data & 0xFF)) )
+          {
+            Sdo_ExpRead( i, 0x1018, 0x04, &exp_data, &exp_data_len );
+            while( Sdo_ReqIsBusy() );
+            if( Sdo_ReqIsFinished() )
+              Terminal_printf(task->terminal, "\tSN: 0x%08X", exp_data);
+          }
+          Terminal_printf(task->terminal, LINE_BREAK);
+        }
       }
-      Terminal_printf( terminal, LINE_BREAK );
-      Terminal_Data.scope_pdo_has_new_sample = FALSE;
+      Terminal_printf(task->terminal, "...done." LINE_BREAK);
+      return;
     }
-#endif
-
-    // check if new data is available
-    if( terminal->ReceivedNewLine( &rx_buffer ) )
-    {
-      int16_t parameter_index;
-
-      // split string to command and argument
-      argument = rx_buffer;
-      while( (*argument != ' ') && (*argument != '\0') )
-        argument ++;
-      if( *argument == ' ' )
-      {
-        *argument = '\0';
-        argument ++;
-      }
-
-#if( defined(ESTL_ENABLE_TERMINAL_REMOTE_PARAMETER) )
-      // check if we received 'remote'
-      if( 0 == strcmp(rx_buffer, "remote") )
-      {
-        error_code_t error_code;
-        if( *argument == '\0' )
-        {
-          if( Terminal_Data.is_remote )
-            Terminal_printf(terminal, "connected to node %d" LINE_BREAK, Terminal_Data.node_id);
-          else
-            Terminal_printf(terminal, "off" LINE_BREAK);
-        }
-        else
-        {
-          if( 0 == strcmp(argument, "scan") )
-          {
-            uint8_t i;
-            uint8_t j = Sdo_GetNrOfNodes();
-            char node_seg_buffer[32];
-            Terminal_printf(terminal, "Scanning %d remote nodes..." LINE_BREAK, j);
-            for( i = 0; i < j; i ++ )
-            {
-              int32_t device_type;
-              uint8_t  device_type_len = 0;
-              // read SDO CANopen device type
-              Sdo_ExpRead( i, 0x1000, 0x00, &device_type, &device_type_len );
-              while( Sdo_ReqIsBusy() );
-              if( Sdo_ReqIsFinished() )
-                Terminal_printf(terminal, "Node: %3d\tType: 0x%08X", i, device_type);
-              // read SDO CANopen name
-              Sdo_SegRead( i, 0x1008, 0x00, node_seg_buffer, sizeof(node_seg_buffer) );
-              while( Sdo_ReqIsBusy() );
-              if( Sdo_ReqIsFinished() )
-              {
-                if( device_type_len )
-                  Terminal_printf(terminal, "\tName: %s", node_seg_buffer);
-                else
-                  Terminal_printf(terminal, "Node: %3d\tName: %s", i, node_seg_buffer);
-                device_type_len = (uint8_t)TRUE;
-                // read SDO CANopen Firmware revision
-                Sdo_SegRead( i, 0x100A, 0x00, node_seg_buffer, sizeof(node_seg_buffer) );
-                while( Sdo_ReqIsBusy() );
-                if( Sdo_ReqIsFinished() )
-                  Terminal_printf(terminal, "\tRev: %s", node_seg_buffer);
-              }
-              if( device_type_len )
-                Terminal_printf(terminal, LINE_BREAK);
-            }
-            Terminal_printf(terminal, "...done." LINE_BREAK);
-            return;
-          }
 /*
-          else if( 0 == strcmp(argument, "save") )
-          {
-          }
+    else if( 0 == strcmp(argument, "save") )
+    {
+    }
 */
-          else if( 0 == strcmp(argument, "off") )
-          {
-            Terminal_Data.is_remote = FALSE;
-            Terminal_printf(terminal, "OK" LINE_BREAK);
-          }
-          else
-          {
-            uint8_t node_id = (uint8_t)Parse_StrToValue(argument);
-            // try to fetch parameter table
-            error_code = Terminal_InitCanOpenTable( terminal,  node_id );
-            if( OK != error_code )
-            {
-              Terminal_Data.is_remote = FALSE;
+    else if( 0 == strcmp(task->argument, "off") )
+    {
+      Terminal_Data.is_remote = FALSE;
+      Terminal_printf(task->terminal, "OK" LINE_BREAK);
+    }
+    else
+    {
+      uint8_t node_id = (uint8_t)Parse_StrToValue(task->argument);
+      // try to fetch parameter table
+      error_code = Terminal_InitCanOpenTable( task->terminal,  node_id );
+      if( OK != error_code )
+      {
+        Terminal_Data.is_remote = FALSE;
 #ifdef ESTL_ENABLE_ERROR_MESSAGES
-              Terminal_printf(terminal, "Could not fetch parameter from node %d: %s (error %d)" LINE_BREAK, node_id, Error_GetMessage(error_code), error_code);
+        Terminal_printf(task->terminal, "Could not fetch parameter from node %d: %s (error %d)" LINE_BREAK, node_id, Error_GetMessage(error_code), error_code);
 #else
-              Terminal_printf(terminal, "Could not fetch parameter from node %d (error %d)" LINE_BREAK, node_id, error_code);
+        Terminal_printf(terminal, "Could not fetch parameter from node %d (error %d)" LINE_BREAK, node_id, error_code);
 #endif
-            }
-            else
-            {
-              Terminal_Data.node_id = node_id;
-              Terminal_Data.is_remote = TRUE;
-              Terminal_printf(terminal, "OK" LINE_BREAK);
-            }
-          }
-        }
-        return;
-      } // we received 'remote'
+      }
+      else
+      {
+        Terminal_Data.node_id = node_id;
+        Terminal_Data.is_remote = TRUE;
+        Terminal_printf(task->terminal, "OK" LINE_BREAK);
+      }
+    }
+  }
+}
 #endif // ESTL_ENABLE_TERMINAL_REMOTE_PARAMETER
 
-      // check if we received 'help'
-      if( 0 == strcmp(rx_buffer, "help") )
-      {
-        if( *argument == '\0' )
-        {
-          int16_t i;
-          range_t index_range;
+
+void Terminal_HandleCmdHelp( Terminal_Task_t * task )
+{
+  int16_t parameter_index;
+
+  if( *task->argument == '\0' )
+  {
+    int16_t i;
+    range_t index_range;
 #if( defined(ESTL_ENABLE_TERMINAL_REMOTE_PARAMETER) )
-          Terminal_printf(terminal, "remote: access to remote parameter interface" LINE_BREAK \
+    Terminal_printf(task->terminal, "remote: access to remote parameter interface" LINE_BREAK \
                                     "  off:    turn off remote access" LINE_BREAK \
                                     "  scan:   look for available remote nodes" LINE_BREAK \
 /*
@@ -289,166 +345,168 @@ void Terminal_Task(void)
 #endif
 
 #if( defined(ESTL_ENABLE_TERMINAL_REMOTE_PARAMETER) )
-          if( Terminal_Data.is_remote )
-          {
-            Terminal_printf(terminal, "Remote node %d parameters -- type 'help <parameter>' to get detailed information" LINE_BREAK, Terminal_Data.node_id);
-            parameter_data_t * parameter_data = (parameter_data_t*)Terminal_Data.can_open_buffer;
-            for( i = Terminal_Data.can_open_index_range.min; i <= Terminal_Data.can_open_index_range.max; i ++ )
-            {
-              // TODO print parameter according to access level and visibility
-              printf( "%s" LINE_BREAK, parameter_data->name );
-              parameter_data ++;
-            }
-          }
-          else
-          {
+    if( Terminal_Data.is_remote )
+    {
+      Terminal_printf(task->terminal, "Remote node %d parameters -- type 'help <parameter>' to get detailed information" LINE_BREAK, Terminal_Data.node_id);
+      parameter_data_t * parameter_data = (parameter_data_t*)Terminal_Data.can_open_buffer;
+      for( i = Terminal_Data.can_open_index_range.min; i <= Terminal_Data.can_open_index_range.max; i ++ )
+      {
+        // TODO print parameter according to access level and visibility
+        printf( "%s" LINE_BREAK, parameter_data->name );
+        parameter_data ++;
+      }
+    }
+    else
+    {
 #endif
-            Terminal_printf(terminal, "Built in parameters -- type 'help <parameter>' to get detailed information" LINE_BREAK);
-            index_range = Parameter_GetIndexRange();
-            for( i = index_range.min; i <= index_range.max; i ++ )
-            {
-              parameter_data_t parameter_data;
-              if( OK == Parameter_ReadData(i, &parameter_data) )
-                Terminal_printf(terminal, "%s" LINE_BREAK, parameter_data.name);
-            }
+      Terminal_printf(task->terminal, "Built in parameters -- type 'help <parameter>' to get detailed information" LINE_BREAK);
+      index_range = Parameter_GetIndexRange();
+      for( i = index_range.min; i <= index_range.max; i ++ )
+      {
+        parameter_data_t parameter_data;
+        if( OK == Parameter_ReadData(i, &parameter_data) )
+          Terminal_printf(task->terminal, "%s" LINE_BREAK, parameter_data.name);
+      }
 #if( defined(ESTL_ENABLE_TERMINAL_REMOTE_PARAMETER) )
-          }
+    }
 #endif
-        }
+  }
+  else
+  {
+    // print help for dedicated parameter
+    parameter_data_t parameter_data;
+    error_code_t parameter_read_status;
+
+#if( defined(ESTL_ENABLE_TERMINAL_REMOTE_PARAMETER) )
+    if( Terminal_Data.is_remote )
+    {
+      // try to find argument in CANopen parameter list
+      parameter_index = Terminal_CanOpenFindIndexByName( task->argument );
+      if( ! ValueInRange(parameter_index, &Terminal_Data.can_open_index_range) )
+        Terminal_ParameterNotFoundMessage(task->terminal, task->argument);
+      else
+      {
+        char info[256];
+        error_code_t error_code;
+        int32_t value;
+        parameter_data_t * parameter_data = &((parameter_data_t*)Terminal_Data.can_open_buffer)[parameter_index - Terminal_Data.can_open_index_range.min];
+        error_code = ParameterSdo_ReadInfo( Terminal_Data.node_id, parameter_index, info, sizeof(info) );
+        if( OK != error_code )
+          Terminal_PrintErrorMessage(task->terminal, error_code);
+        error_code = ParameterSdo_ReadValue( Terminal_Data.node_id, parameter_index, &value );
+        if( OK != error_code )
+          Terminal_PrintErrorMessage(task->terminal, error_code);
+
+        // TODO print parameter according to access level and visibility and read-success
+        Terminal_PrintParameterDetails( task->terminal, parameter_data, value, info );
+        Terminal_printf(task->terminal, LINE_BREAK);
+      }
+    }
+    else
+    {
+#endif
+      // try to find argument in local parameter list
+      parameter_index = Parameter_FindIndexByName(task->argument);
+      if( ! Parameter_IndexExists(parameter_index) )
+        Terminal_ParameterNotFoundMessage(task->terminal, task->argument);
+      else
+      {
+        parameter_read_status = Parameter_ReadData(parameter_index, &parameter_data);
+        if( parameter_read_status != OK )
+          Terminal_PrintErrorMessage(task->terminal, parameter_read_status);
         else
-        {
-          // print help for dedicated parameter
-          parameter_data_t parameter_data;
-          error_code_t parameter_read_status;
+          Terminal_PrintParameterDetails( task->terminal, &parameter_data, Parameter_GetValue(parameter_index), Parameter_GetHelp(parameter_index) );
+        Terminal_printf(task->terminal, LINE_BREAK);
+      }
+#if( defined(ESTL_ENABLE_TERMINAL_REMOTE_PARAMETER) )
+    }
+#endif
+  }
+}
+
+
+void Terminal_HandleCmd( Terminal_Task_t * task )
+{
+  int16_t parameter_index;
 
 #if( defined(ESTL_ENABLE_TERMINAL_REMOTE_PARAMETER) )
-          if( Terminal_Data.is_remote )
-          {
-            // try to find argument in CANopen parameter list
-            parameter_index = Terminal_CanOpenFindIndexByName( argument );
-            if( ! ValueInRange(parameter_index, &Terminal_Data.can_open_index_range) )
-              Terminal_ParameterNotFoundMessage(terminal, argument);
-            else
-            {
-              char info[256];
-              error_code_t error_code;
-              int32_t value;
-              parameter_data_t * parameter_data = &((parameter_data_t*)Terminal_Data.can_open_buffer)[parameter_index - Terminal_Data.can_open_index_range.min];
-              error_code = ParameterSdo_ReadInfo( Terminal_Data.node_id, parameter_index, info, sizeof(info) );
-              if( OK != error_code )
-                Terminal_PrintErrorMessage(terminal, error_code);
-              error_code = ParameterSdo_ReadValue( Terminal_Data.node_id, parameter_index, &value );
-              if( OK != error_code )
-                Terminal_PrintErrorMessage(terminal, error_code);
-
-              // TODO print parameter according to access level and visibility and read-success
-              Terminal_PrintParameterDetails( terminal, parameter_data, value, info );
-              Terminal_printf(terminal, LINE_BREAK);
-            }
-          }
-          else
-          {
+  range_t range;
+  if( Terminal_Data.is_remote )
+  {
+    // find command in CANopen parameter list
+    parameter_index = Terminal_CanOpenFindIndexByName( task->rx_buffer );
+    range = Terminal_Data.can_open_index_range;
+  }
+  else
+  {
+    // find command in parameter list
+    parameter_index = Parameter_FindIndexByName( task->rx_buffer );
+    range = Parameter_GetIndexRange();
+  }
+  // check index range
+  if( ! ValueInRange(parameter_index, &range) )
+    Terminal_ParameterNotFoundMessage(task->terminal, task->rx_buffer);
+#else
+  // try to find command in parameter list
+  parameter_index = Parameter_FindIndexByName(task->rx_buffer);
+  if( ! Parameter_IndexExists(parameter_index) )
+    Terminal_ParameterNotFoundMessage(task->terminal, task->rx_buffer);
 #endif
-            // try to find argument in local parameter list
-            parameter_index = Parameter_FindIndexByName(argument);
-            if( ! Parameter_IndexExists(parameter_index) )
-              Terminal_ParameterNotFoundMessage(terminal, argument);
-            else
-            {
-              parameter_read_status = Parameter_ReadData(parameter_index, &parameter_data);
-              if( parameter_read_status != OK )
-                Terminal_PrintErrorMessage(terminal, parameter_read_status);
-              else
-                Terminal_PrintParameterDetails( terminal, &parameter_data, Parameter_GetValue(parameter_index), Parameter_GetHelp(parameter_index) );
-              Terminal_printf(terminal, LINE_BREAK);
-            }
+  else
+  {
+    error_code_t parameter_access_status;
+    // check if we have an argument
+    if( *task->argument != '\0' )
+    {
+      // write parameter
+      int32_t value;
+      value = Parse_StrToValue( task->argument );
 #if( defined(ESTL_ENABLE_TERMINAL_REMOTE_PARAMETER) )
-          }
+      if( Terminal_Data.is_remote )
+        parameter_access_status = ParameterSdo_WriteValue( Terminal_Data.node_id, parameter_index, value );
+      else
+        parameter_access_status = Parameter_WriteValue( parameter_index, value );
+#else
+      parameter_access_status = Parameter_WriteValue( parameter_index, value );
 #endif
-        }
-        return;
-      } // we received 'help'
+      // print error on write fail
+      if( parameter_access_status != OK )
+        Terminal_PrintErrorMessage(task->terminal, parameter_access_status);
+      else
+        Terminal_printf(task->terminal, "OK" LINE_BREAK);
+    }
+    else
+    {
+      // read parameter
+      int32_t value;
+      parameter_data_t parameter_data;
+      parameter_data_t * parameter_data_ptr = &parameter_data;
 #if( defined(ESTL_ENABLE_TERMINAL_REMOTE_PARAMETER) )
-      range_t range;
       if( Terminal_Data.is_remote )
       {
-        // find command in CANopen parameter list
-        parameter_index = Terminal_CanOpenFindIndexByName( rx_buffer );
-        range = Terminal_Data.can_open_index_range;
+        parameter_data_ptr = &((parameter_data_t*)Terminal_Data.can_open_buffer)[parameter_index - Terminal_Data.can_open_index_range.min];
+        parameter_access_status = ParameterSdo_ReadValue( Terminal_Data.node_id, parameter_index, &value );
       }
       else
       {
-        // find command in parameter list
-        parameter_index = Parameter_FindIndexByName( rx_buffer );
-        range = Parameter_GetIndexRange();
+        Parameter_ReadData(parameter_index, &parameter_data);
+        parameter_access_status = Parameter_ReadValue(parameter_index, &value);
       }
-      // check index range
-      if( ! ValueInRange(parameter_index, &range) )
-        Terminal_ParameterNotFoundMessage(terminal, rx_buffer);
 #else
-      // try to find command in parameter list
-      parameter_index = Parameter_FindIndexByName(rx_buffer);
-      if( ! Parameter_IndexExists(parameter_index) )
-        Terminal_ParameterNotFoundMessage(terminal, rx_buffer);
+       Parameter_ReadData(parameter_index, &parameter_data);
+       parameter_access_status = Parameter_ReadValue(parameter_index, &value);
 #endif
+      // print error on write fail otherwise show value
+      if( parameter_access_status != OK )
+        Terminal_PrintErrorMessage(task->terminal, parameter_access_status);
       else
       {
-        error_code_t parameter_access_status;
-        // check if we have an argument
-        if( *argument != '\0' )
-        {
-          // write parameter
-          int32_t value;
-          value = Parse_StrToValue( argument );
-#if( defined(ESTL_ENABLE_TERMINAL_REMOTE_PARAMETER) )
-          if( Terminal_Data.is_remote )
-            parameter_access_status = ParameterSdo_WriteValue( Terminal_Data.node_id, parameter_index, value );
-          else
-            parameter_access_status = Parameter_WriteValue( parameter_index, value );
-#else
-          parameter_access_status = Parameter_WriteValue( parameter_index, value );
-#endif
-          // print error on write fail
-          if( parameter_access_status != OK )
-            Terminal_PrintErrorMessage(terminal, parameter_access_status);
-          else
-            Terminal_printf(terminal, "OK" LINE_BREAK);
-        }
-        else
-        {
-          // read parameter
-          int32_t value;
-          parameter_data_t parameter_data;
-          parameter_data_t * parameter_data_ptr = &parameter_data;
-#if( defined(ESTL_ENABLE_TERMINAL_REMOTE_PARAMETER) )
-          if( Terminal_Data.is_remote )
-          {
-            parameter_data_ptr = &((parameter_data_t*)Terminal_Data.can_open_buffer)[parameter_index - Terminal_Data.can_open_index_range.min];
-            parameter_access_status = ParameterSdo_ReadValue( Terminal_Data.node_id, parameter_index, &value );
-          }
-          else
-          {
-            Parameter_ReadData(parameter_index, &parameter_data);
-            parameter_access_status = Parameter_ReadValue(parameter_index, &value);
-          }
-#else
-           Parameter_ReadData(parameter_index, &parameter_data);
-           parameter_access_status = Parameter_ReadValue(parameter_index, &value);
-#endif
-          // print error on write fail otherwise show value
-          if( parameter_access_status != OK )
-            Terminal_PrintErrorMessage(terminal, parameter_access_status);
-          else
-          {
-            char value_str[16];
-            Unit_PhysicalValueToString( value_str, sizeof(value_str), value, parameter_data_ptr->repr, parameter_data_ptr->unit );
-            Terminal_printf(terminal, "%s" LINE_BREAK, value_str);
-          }
-        }
-      } // we received a valid parameter
-    } // new data was available
-
-  }
+        char value_str[16];
+        Unit_PhysicalValueToString( value_str, sizeof(value_str), value, parameter_data_ptr->repr, parameter_data_ptr->unit );
+        Terminal_printf(task->terminal, "%s" LINE_BREAK, value_str);
+      }
+    }
+  } // we received a valid parameter
 }
 
 
@@ -515,6 +573,7 @@ void Terminal_PrintErrorMessage( const terminal_t * terminal, error_code_t error
 }
 
 
+#if( defined(ESTL_ENABLE_SCOPE) && defined(ESTL_ENABLE_DEBUG) )
 /**
  * Print scope data to terminal.
  * Okay, this function does not really print to terminal due to timing,
@@ -537,6 +596,7 @@ bool_t Terminal_PrintScope( uint16_t index, scope_sample_t * scope_sample )
   Terminal_Data.scope_has_new_sample = TRUE;
   return TRUE;
 }
+#endif
 
 
 #if( defined(ESTL_ENABLE_TERMINAL_REMOTE_PARAMETER) )

@@ -48,12 +48,21 @@
 
 struct {
   scope_pdo_sample_t    sample_buffer[SCOPE_PDO_NR_OF_BUFFER_ENTRIES];
+  bool_t                (* PrintFunction)(scope_pdo_sample_t*);         //!<  PDO Scope data print function
   uint8_t               sample_buffer_index;
   bool_t                sample_is_complete;
 } ScopePdo_data;
 
 
 #if( defined(ESTL_ENABLE_TERMINAL_REMOTE_PARAMETER) )
+
+void ScopePdo_Init( bool_t (* PrintFunction)(scope_pdo_sample_t*) )
+{
+  if( NULL != PrintFunction )
+    ScopePdo_data.PrintFunction = PrintFunction;
+}
+
+
 void ScopePdo_ReceiveDaq( uint8_t node_id, uint8_t * rx )
 {
   uint16_t sample_index;
@@ -90,8 +99,8 @@ void ScopePdo_ReceiveDaq( uint8_t node_id, uint8_t * rx )
     ScopePdo_data.sample_buffer[ScopePdo_data.sample_buffer_index].validity_bits |= (1 << channel_index);
 
     // check if this is sample's last channel
-    if( channel_index == (nr_of_channels - 1) )
-      Terminal_PrintPdoScope( &(ScopePdo_data.sample_buffer[ScopePdo_data.sample_buffer_index]) );
+    if( ScopePdo_data.PrintFunction && (channel_index == (nr_of_channels - 1)) )
+      ScopePdo_data.PrintFunction( &(ScopePdo_data.sample_buffer[ScopePdo_data.sample_buffer_index]) );
   }
 }
 #endif
