@@ -139,13 +139,15 @@ bool_t Sdo_ReqIsBusy( void );
 
 
 /**
- * Check if SDO request is successfully finished.
+ * Get finish status of SDO request
  *
- * @return              Success state of finished SDO request
- *   @retval    FALSE   SDO request failed
- *   @retval    TRUE    SDO request was successfully
+ * @return
+ *   @retval    OK                      SDO request finished successfully
+ *   @retval    TIMEOUT                 SDO request timed out
+ *   @retval    SDO_CONNECTION_FAILED   SDO request failed
+ *   @retval    RESOURCE_BUSY           SDO request is still ongoing
  */
-bool_t Sdo_ReqIsFinished( void );
+error_code_t Sdo_ReqFinishStatus( void );
 
 
 /**

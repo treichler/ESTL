@@ -30,6 +30,7 @@
 
 #include "ESTL_Config.h"
 #include "ESTL_Types.h"
+#include "Error.h"
 #include "Sdo.h"
 
 
@@ -43,6 +44,7 @@
 
 typedef enum {
   SDO_REQ_FAIL,
+  SDO_REQ_TIMEOUT,
   SDO_REQ_SUCCESS,
   SDO_REQ_EXP_READ_BUSY,
   SDO_REQ_EXP_WRITE_BUSY,
@@ -91,20 +93,26 @@ void Sdo_1msTask(void)
   {
     Sdo_data.timeout --;
     if( 0 == Sdo_data.timeout )
-      Sdo_data.req_state = SDO_REQ_FAIL;           // change status to fail on timeout
+      Sdo_data.req_state = SDO_REQ_TIMEOUT;     // change status to fail on timeout
   }
 }
 
 
 bool_t Sdo_ReqIsBusy( void )
 {
-  return ! ((SDO_REQ_SUCCESS == Sdo_data.req_state) || (SDO_REQ_FAIL == Sdo_data.req_state));
+  return ! ((SDO_REQ_SUCCESS == Sdo_data.req_state) || (SDO_REQ_TIMEOUT == Sdo_data.req_state) || (SDO_REQ_FAIL == Sdo_data.req_state));
 }
 
 
-bool_t Sdo_ReqIsFinished( void )
+error_code_t Sdo_ReqFinishStatus( void )
 {
-  return SDO_REQ_SUCCESS == Sdo_data.req_state;
+  if( SDO_REQ_SUCCESS == Sdo_data.req_state )
+    return OK;
+  else if( SDO_REQ_TIMEOUT == Sdo_data.req_state )
+    return TIMEOUT;
+  else if( SDO_REQ_FAIL == Sdo_data.req_state )
+    return SDO_CONNECTION_FAILED;
+  return RESOURCE_BUSY;
 }
 
 
@@ -128,8 +136,7 @@ void Sdo_SetNrOfNodes( uint8_t nr_of_nodes )
 
 bool_t Sdo_ExpRead( uint8_t node_id, uint16_t index, uint8_t subindex, int32_t* data, uint8_t* valid_data_bytes )
 {
-  if( Sdo_data.is_initialized && Sdo_data.SdoIsAvailableFunction() && \
-      ((SDO_REQ_SUCCESS == Sdo_data.req_state) || (SDO_REQ_FAIL == Sdo_data.req_state)) )
+  if( Sdo_data.is_initialized && Sdo_data.SdoIsAvailableFunction() && (! Sdo_ReqIsBusy()) )
   {
     // only initiate when no SDO client transfer is ongoing
     Sdo_data.req_state = SDO_REQ_EXP_READ_BUSY;
@@ -154,8 +161,7 @@ bool_t Sdo_ExpRead( uint8_t node_id, uint16_t index, uint8_t subindex, int32_t* 
 
 bool_t Sdo_ExpWrite( uint8_t node_id, uint16_t index, uint8_t subindex, int32_t data, uint8_t length )
 {
-  if( Sdo_data.is_initialized && Sdo_data.SdoIsAvailableFunction() && \
-      ((SDO_REQ_SUCCESS == Sdo_data.req_state) || (SDO_REQ_FAIL == Sdo_data.req_state)) )
+  if( Sdo_data.is_initialized && Sdo_data.SdoIsAvailableFunction() && (! Sdo_ReqIsBusy()) )
   {
     // only initiate when no SDO client transfer is ongoing
     Sdo_data.req_state = SDO_REQ_EXP_WRITE_BUSY;
@@ -183,8 +189,7 @@ bool_t Sdo_ExpWrite( uint8_t node_id, uint16_t index, uint8_t subindex, int32_t 
 
 bool_t Sdo_SegRead( uint8_t node_id, uint16_t index, uint8_t subindex, void* buff, uint32_t buff_size )
 {
-  if( Sdo_data.is_initialized && Sdo_data.SdoIsAvailableFunction() && \
-      ((SDO_REQ_SUCCESS == Sdo_data.req_state) || (SDO_REQ_FAIL == Sdo_data.req_state)) )
+  if( Sdo_data.is_initialized && Sdo_data.SdoIsAvailableFunction() && (! Sdo_ReqIsBusy()) )
   {
     Sdo_data.req_state       = SDO_REQ_SEG_READ_BUSY;
     Sdo_data.resp_buffer     = buff;

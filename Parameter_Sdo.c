@@ -65,12 +65,14 @@ enum {
 
 error_code_t ParameterSdo_ReadTableIndexRange( uint8_t node_id, range_t * parameter_index_range )
 {
+  error_code_t req_status;
   int32_t temp;
 
   Sdo_ExpRead( node_id, 0x2000, SUBIDX_PARAM_INDEX_RANGE, &temp, 0 );
   while( Sdo_ReqIsBusy() );
-  if( ! Sdo_ReqIsFinished() )
-    return SDO_CONNECTION_FAILED;
+  req_status = Sdo_ReqFinishStatus();
+  if( OK != req_status )
+    return req_status;
   parameter_index_range->max = (int16_t)(temp >> 16);
   parameter_index_range->min = (int16_t)temp;
 
@@ -82,9 +84,7 @@ error_code_t ParameterSdo_ReadTableCrc( uint8_t node_id, uint32_t * crc )
 {
   Sdo_ExpRead( node_id, 0x2000, SUBIDX_PARAM_TABLE_CRC, (int32_t*)crc, 0 );
   while( Sdo_ReqIsBusy() );
-  if( ! Sdo_ReqIsFinished() )
-    return SDO_CONNECTION_FAILED;
-  return OK;
+  return Sdo_ReqFinishStatus();
 }
 
 
@@ -95,9 +95,7 @@ error_code_t ParameterSdo_ReadName( uint8_t node_id, int16_t parameter_index, ch
 
   Sdo_SegRead( node_id, index, sub_index + SUBIDX_PARAM_NAME, name, len );
   while( Sdo_ReqIsBusy() );
-  if( ! Sdo_ReqIsFinished() )
-    return SDO_CONNECTION_FAILED;
-  return OK;
+  return Sdo_ReqFinishStatus();
 }
 
 
@@ -111,9 +109,7 @@ error_code_t ParameterSdo_ReadInfo( uint8_t node_id, int16_t parameter_index, ch
   Sdo_SegRead( node_id, index, sub_index + SUBIDX_PARAM_INFO, info, len-1 );
   while( Sdo_ReqIsBusy() );
   info[len-1] = '\0';
-  if( ! Sdo_ReqIsFinished() )
-    return SDO_CONNECTION_FAILED;
-  return OK;
+  return Sdo_ReqFinishStatus();
 }
 
 
@@ -124,9 +120,7 @@ error_code_t ParameterSdo_ReadValue( uint8_t node_id, int16_t parameter_index, i
 
   Sdo_ExpRead( node_id, index, sub_index + SUBIDX_PARAM_ACTUAL, value, 0 );
   while( Sdo_ReqIsBusy() );
-  if( ! Sdo_ReqIsFinished() )
-    return SDO_CONNECTION_FAILED;
-  return OK;
+  return Sdo_ReqFinishStatus();
 }
 
 
@@ -134,18 +128,18 @@ error_code_t ParameterSdo_WriteValue( uint8_t node_id, int16_t parameter_index, 
 {
   uint16_t index = 0x2000 + ((uint16_t)(parameter_index) >> 2);
   uint8_t sub_index = ((uint8_t)(parameter_index) << 6);
+  error_code_t req_status;
 
   Sdo_ExpWrite( node_id, index, sub_index + SUBIDX_PARAM_ACTUAL, value, 4 );
   while( Sdo_ReqIsBusy() );
-  if( ! Sdo_ReqIsFinished() )
+  req_status = Sdo_ReqFinishStatus();
+  if( SDO_CONNECTION_FAILED == req_status )
   {
     uint32_t sdo_abort_code = Sdo_GetAbortCode();
     if( PSEUDO_SDO_ABORT_CODE == (0xFFFF0000 & sdo_abort_code) )
       return (error_code_t)sdo_abort_code;
-    else
-      return SDO_CONNECTION_FAILED;
   }
-  return OK;
+  return req_status;
 }
 
 
@@ -153,32 +147,37 @@ error_code_t ParameterSdo_ReadTableEntry( uint8_t node_id, int16_t parameter_ind
 {
   uint16_t index = 0x2000 + ((uint16_t)(parameter_index) >> 2);
   uint8_t sub_index = ((uint8_t)(parameter_index) << 6);
+  error_code_t req_status;
   int32_t temp;
 
   Sdo_ExpRead( node_id, index, sub_index + SUBIDX_PARAM_PROPERTY, &temp, 0 );
   while( Sdo_ReqIsBusy() );
-  if( ! Sdo_ReqIsFinished() )
-    return SDO_CONNECTION_FAILED;
+  req_status = Sdo_ReqFinishStatus();
+  if( OK != req_status )
+    return req_status;
   parameter_data->flags = (uint16_t)temp;
   parameter_data->repr = (repr_t)(temp >> 16);
   parameter_data->unit = (unit_t)(temp >> 24);
 
   Sdo_ExpRead( node_id, index, sub_index + SUBIDX_PARAM_NOMINAL, &temp, 0 );
   while( Sdo_ReqIsBusy() );
-  if( ! Sdo_ReqIsFinished() )
-    return SDO_CONNECTION_FAILED;
+  req_status = Sdo_ReqFinishStatus();
+  if( OK != req_status )
+    return req_status;
   parameter_data->nominal = (int32_t)temp;
 
   Sdo_ExpRead( node_id, index, sub_index + SUBIDX_PARAM_MINIMUM, &temp, 0 );
   while( Sdo_ReqIsBusy() );
-  if( ! Sdo_ReqIsFinished() )
-    return SDO_CONNECTION_FAILED;
+  req_status = Sdo_ReqFinishStatus();
+  if( OK != req_status )
+    return req_status;
   parameter_data->minimum = (int32_t)temp;
 
   Sdo_ExpRead( node_id, index, sub_index + SUBIDX_PARAM_MAXIMUM, &temp, 0 );
   while( Sdo_ReqIsBusy() );
-  if( ! Sdo_ReqIsFinished() )
-    return SDO_CONNECTION_FAILED;
+  req_status = Sdo_ReqFinishStatus();
+  if( OK != req_status )
+    return req_status;
   parameter_data->maximum = (int32_t)temp;
 
   return OK;

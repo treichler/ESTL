@@ -258,12 +258,12 @@ void Terminal_HandleCmdRemote( Terminal_Task_t * task )
         // read SDO CANopen device type
         Sdo_ExpRead( i, 0x1000, 0x00, &exp_data, &exp_data_len );
         while( Sdo_ReqIsBusy() );
-        if( Sdo_ReqIsFinished() )
+        if( OK == Sdo_ReqFinishStatus() )
           Terminal_printf(task->terminal, "Node: %3d\tType: 0x%08X", i, exp_data);
         // read SDO CANopen name
         Sdo_SegRead( i, 0x1008, 0x00, node_seg_buffer, sizeof(node_seg_buffer) );
         while( Sdo_ReqIsBusy() );
-        if( Sdo_ReqIsFinished() )
+        if( OK == Sdo_ReqFinishStatus() )
         {
           if( exp_data_len )
             Terminal_printf(task->terminal, "\tName: %s", node_seg_buffer);
@@ -272,16 +272,16 @@ void Terminal_HandleCmdRemote( Terminal_Task_t * task )
           // read SDO CANopen Firmware revision
           Sdo_SegRead( i, 0x100A, 0x00, node_seg_buffer, sizeof(node_seg_buffer) );
           while( Sdo_ReqIsBusy() );
-          if( Sdo_ReqIsFinished() )
+          if( OK == Sdo_ReqFinishStatus() )
             Terminal_printf(task->terminal, "\tRev: %s", node_seg_buffer);
           // read SDO CANopen serial number
           Sdo_ExpRead( i, 0x1018, 0x00, &exp_data, &exp_data_len );
           while( Sdo_ReqIsBusy() );
-          if( Sdo_ReqIsFinished() && (1 == exp_data_len) && (4 == (exp_data & 0xFF)) )
+          if( OK == Sdo_ReqFinishStatus() && (1 == exp_data_len) && (4 == (exp_data & 0xFF)) )
           {
             Sdo_ExpRead( i, 0x1018, 0x04, &exp_data, &exp_data_len );
             while( Sdo_ReqIsBusy() );
-            if( Sdo_ReqIsFinished() )
+            if( OK == Sdo_ReqFinishStatus() )
               Terminal_printf(task->terminal, "\tSN: 0x%08X", exp_data);
           }
           Terminal_printf(task->terminal, LINE_BREAK);
