@@ -76,7 +76,7 @@ int32_t Debug_GetValue(uint8_t index);
  * Parameter function to access and set debug channel index
  * @return      No checking is performed, so always OK is returned.
  */
-error_code_t Debug_IndexParameterFunction(parameter_function_t parameter_function, int32_t * index);
+error_code_t Debug_IndexParameterFunction(function_call_t function_call, int32_t * index);
 
 
 /**
@@ -89,7 +89,7 @@ error_code_t Debug_IndexParameterFunction(parameter_function_t parameter_functio
  *   @retval OK                 Read respectively write of address was successfully
  *   @retval NOT_ACCESSIBLE     Provided address is not accessible
  */
-error_code_t Debug_AddrParameterFunction(parameter_function_t parameter_function, int32_t * address);
+error_code_t Debug_AddrParameterFunction(function_call_t function_call, int32_t * address);
 
 
 /**
@@ -103,7 +103,7 @@ error_code_t Debug_AddrParameterFunction(parameter_function_t parameter_function
  *   @retval OK                 Read respectively write of mask was successfully
  *   @retval NOT_ACCESSIBLE     Currently set address is forbidden and so the mask is discarded
  */
-error_code_t Debug_MaskParameterFunction(parameter_function_t parameter_function, int32_t * mask);
+error_code_t Debug_MaskParameterFunction(function_call_t function_call, int32_t * mask);
 
 
 /**
@@ -115,7 +115,7 @@ error_code_t Debug_MaskParameterFunction(parameter_function_t parameter_function
  *   @retval OK                 Read respectively write of data was successfully
  *   @retval NOT_ACCESSIBLE     Write access is denied.
  */
-error_code_t Debug_DataParameterFunction(parameter_function_t parameter_function, int32_t * value);
+error_code_t Debug_DataParameterFunction(function_call_t function_call, int32_t * value);
 
 
 /**

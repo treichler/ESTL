@@ -173,14 +173,16 @@ enum {
 
 
 /**
- * Define the reason for a parameter function call
+ * @deprecated
+ * Just for backward compatibility with previous type definition
+ * @{
  */
-typedef enum {
-  PARAMETER_INIT,       //!<  Indicates the initial call of the parameter function call
-  PARAMETER_SAVE,       //!<  Indicates that parameter is to be saved in non-volatile memory
-  PARAMETER_READ,       //!<  Perform a write operation on parameter function
-  PARAMETER_WRITE       //!<  Perform a read operation on parameter function
-} parameter_function_t;
+#define parameter_function_t    function_call_t
+#define PARAMETER_INIT          FUNCTION_INIT
+#define PARAMETER_SAVE          FUNCTION_SAVE
+#define PARAMETER_READ          FUNCTION_READ
+#define PARAMETER_WRITE         FUNCTION_WRITE
+/** @} */
 
 
 /**
@@ -196,7 +198,7 @@ typedef struct
   const int32_t         minimum;        //!< Parameter's minimum value
   const int32_t         nominal;        //!< Parameter's nominal value
   const int32_t         maximum;        //!< Parameter's maximum value
-  error_code_t          (* const parameterFunction)(parameter_function_t, int32_t*);    //!< Optional parameter call function
+  error_code_t          (* const parameterFunction)(function_call_t, int32_t*);    //!< Optional parameter call function
   const char * const    help;           //!< Additional information related to this particular parameter
 } parameter_table_entry_t;
 

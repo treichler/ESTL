@@ -95,11 +95,11 @@ void Scope_Init( bool_t (* PrintFunction)(uint16_t, scope_sample_t*) )
 }
 
 
-error_code_t Scope_CmdParameterFunction(parameter_function_t parameter_function, int32_t * cmd)
+error_code_t Scope_CmdParameterFunction(function_call_t function_call, int32_t * cmd)
 {
-  if (parameter_function == PARAMETER_READ)
+  if (function_call == FUNCTION_READ)
     *cmd = (int32_t)Scope_data.state;
-  if (parameter_function == PARAMETER_WRITE)
+  if (function_call == FUNCTION_WRITE)
   {
 /*
     if (*cmd < 0)
@@ -145,9 +145,9 @@ error_code_t Scope_CmdParameterFunction(parameter_function_t parameter_function,
 }
 
 
-error_code_t Scope_SetupParameterFunction(parameter_function_t parameter_function, int32_t * param)
+error_code_t Scope_SetupParameterFunction(function_call_t function_call, int32_t * param)
 {
-  if( PARAMETER_WRITE == parameter_function )
+  if( FUNCTION_WRITE == function_call )
   {
     if( (SCOPE_COMPLETE == Scope_data.state) || (SCOPE_STOP == Scope_data.state) )
     {

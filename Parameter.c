@@ -227,9 +227,9 @@ bool_t Parameter_EntryIsAccessible(const parameter_table_entry_t * parameter_tab
  * @param     value                       Pointer to related value in parameter array
  * @return                                Always returns OK
  */
-error_code_t Parameter_SysKeyFunction(parameter_function_t parameter_function, int32_t * value)
+error_code_t Parameter_SysKeyFunction(function_call_t parameter_function, int32_t * value)
 {
-  if( (parameter_function == PARAMETER_INIT) || (parameter_function == PARAMETER_WRITE) )
+  if( (parameter_function == FUNCTION_INIT) || (parameter_function == FUNCTION_WRITE) )
   {
     uint8_t i;
     Parameter_Data.access_level = 0;
@@ -247,7 +247,7 @@ error_code_t Parameter_SysKeyFunction(parameter_function_t parameter_function, i
   // Only when save is called, the value contains the secret
   // to be stored in non-volatile memory.
   // Otherwise value contains the current access level.
-  if( parameter_function == PARAMETER_SAVE )
+  if( parameter_function == FUNCTION_SAVE )
   {
     // only save developer access key
     if( (LEVEL_4 & LEVEL_MASK) > Parameter_Data.access_level )
@@ -273,9 +273,9 @@ error_code_t Parameter_SysKeyFunction(parameter_function_t parameter_function, i
  *   @retval  PARAMETER_REV_MINOR_CHANGE  Parameter table's minor revision has changed.
  *   @retval  PARAMETER_REV_MAJOR_CHANGE  Parameter table's major revision has changed.
  */
-error_code_t Parameter_SysInfoFunction(parameter_function_t parameter_function, int32_t * value)
+error_code_t Parameter_SysInfoFunction(function_call_t parameter_function, int32_t * value)
 {
-  if( parameter_function == PARAMETER_INIT )
+  if( parameter_function == FUNCTION_INIT )
   {
     int32_t nvmem_parameter_revision = *value;
     *value = PAR_REV_NR;
@@ -312,10 +312,10 @@ error_code_t Parameter_SysInfoFunction(parameter_function_t parameter_function, 
  * @return                           Error code depending on internal function calls.
  *   @retval  OK                     On success.
  */
-error_code_t Parameter_SysCmdFunction(parameter_function_t parameter_function, int32_t * value)
+error_code_t Parameter_SysCmdFunction(function_call_t parameter_function, int32_t * value)
 {
   error_code_t error_code = OK;
-  if( parameter_function == PARAMETER_WRITE )
+  if( parameter_function == FUNCTION_WRITE )
   {
     switch( *value )
     {
@@ -343,7 +343,7 @@ error_code_t Parameter_SysCmdFunction(parameter_function_t parameter_function, i
         break;
     }
   }
-  else if( parameter_function == PARAMETER_READ )
+  else if( parameter_function == FUNCTION_READ )
   {
     if( Parameter_Data.show_table_crc )
       *value = Parameter_Data.table_crc;
@@ -364,9 +364,9 @@ error_code_t Parameter_SysCmdFunction(parameter_function_t parameter_function, i
  * @param     value                  Pointer to related value in parameter array
  * @return                           Error code, always returns OK
  */
-error_code_t Parameter_SerialNumberFunction(parameter_function_t parameter_function, int32_t * value)
+error_code_t Parameter_SerialNumberFunction(function_call_t parameter_function, int32_t * value)
 {
-  if( (NULL != Parameter_Data.serialNumberCallback) && ((PARAMETER_INIT == parameter_function) || (PARAMETER_WRITE == parameter_function)) )
+  if( (NULL != Parameter_Data.serialNumberCallback) && ((FUNCTION_INIT == parameter_function) || (FUNCTION_WRITE == parameter_function)) )
     Parameter_Data.serialNumberCallback( (uint32_t)(*value) );
   return OK;
 }
@@ -543,7 +543,7 @@ error_code_t Parameter_WriteValue(int16_t parameter_index, int32_t value)
   Parameter_array[SYSTEM_PARAMETER_TABLE_NR_OF_ENTRIES + parameter_index] = value;
   if( parameter_table_entry->parameterFunction )
   {
-    error = parameter_table_entry->parameterFunction( PARAMETER_WRITE, &(Parameter_array[SYSTEM_PARAMETER_TABLE_NR_OF_ENTRIES + parameter_index]) );
+    error = parameter_table_entry->parameterFunction( FUNCTION_WRITE, &(Parameter_array[SYSTEM_PARAMETER_TABLE_NR_OF_ENTRIES + parameter_index]) );
     if( OK != error )
       Parameter_array[SYSTEM_PARAMETER_TABLE_NR_OF_ENTRIES + parameter_index] = old_value;
   }
@@ -560,7 +560,7 @@ error_code_t Parameter_ReadValue(int16_t parameter_index, int32_t * value)
     return error;
 
   if (parameter_table_entry->parameterFunction != 0)
-    error = parameter_table_entry->parameterFunction(PARAMETER_READ, &Parameter_array[SYSTEM_PARAMETER_TABLE_NR_OF_ENTRIES + parameter_index]);
+    error = parameter_table_entry->parameterFunction(FUNCTION_READ, &Parameter_array[SYSTEM_PARAMETER_TABLE_NR_OF_ENTRIES + parameter_index]);
   *value = Parameter_array[SYSTEM_PARAMETER_TABLE_NR_OF_ENTRIES + parameter_index];
 
   if( (! Parameter_EntryIsAccessible(parameter_table_entry)) && (parameter_table_entry->flags & HIDE) )
@@ -579,7 +579,7 @@ int32_t Parameter_GetValue(int16_t parameter_index)
 
   if (parameter_table_entry->parameterFunction != 0)
   {
-    error = parameter_table_entry->parameterFunction( PARAMETER_READ, &(Parameter_array[SYSTEM_PARAMETER_TABLE_NR_OF_ENTRIES + parameter_index]) );
+    error = parameter_table_entry->parameterFunction( FUNCTION_READ, &(Parameter_array[SYSTEM_PARAMETER_TABLE_NR_OF_ENTRIES + parameter_index]) );
     if( OK != error )
       return 0;
   }
@@ -757,7 +757,7 @@ error_code_t Parameter_LoadNvData(void)
     if( parameter_table_entry->parameterFunction != 0 )
     {
       error_code_t error;
-      error = parameter_table_entry->parameterFunction(PARAMETER_INIT, &Parameter_array[SYSTEM_PARAMETER_TABLE_NR_OF_ENTRIES + i]);
+      error = parameter_table_entry->parameterFunction(FUNCTION_INIT, &Parameter_array[SYSTEM_PARAMETER_TABLE_NR_OF_ENTRIES + i]);
 
       // abort if parameter function call fails
       if( error == PARAMETER_REV_MAJOR_CHANGE )
@@ -816,7 +816,7 @@ error_code_t Parameter_LoadDefaultData(void)
       return error;
     Parameter_array[SYSTEM_PARAMETER_TABLE_NR_OF_ENTRIES + i] = parameter_table_entry->nominal;
     if (parameter_table_entry->parameterFunction != 0)
-      parameter_table_entry->parameterFunction( PARAMETER_INIT, &(Parameter_array[SYSTEM_PARAMETER_TABLE_NR_OF_ENTRIES + i]) );
+      parameter_table_entry->parameterFunction( FUNCTION_INIT, &(Parameter_array[SYSTEM_PARAMETER_TABLE_NR_OF_ENTRIES + i]) );
   }
   return error;
 }
@@ -866,7 +866,7 @@ error_code_t Parameter_Save(void)
     if( parameter_table_entry->flags & NVMEM )
     {
       if( parameter_table_entry->parameterFunction )
-        parameter_table_entry->parameterFunction( PARAMETER_SAVE, &(Parameter_array[SYSTEM_PARAMETER_TABLE_NR_OF_ENTRIES + i]) );
+        parameter_table_entry->parameterFunction( FUNCTION_SAVE, &(Parameter_array[SYSTEM_PARAMETER_TABLE_NR_OF_ENTRIES + i]) );
       nv_parameter_entry[nvmem_index].value = Parameter_array[SYSTEM_PARAMETER_TABLE_NR_OF_ENTRIES + i];
       nv_parameter_entry[nvmem_index].index = i;
       nv_parameter_entry[nvmem_index].crc   = Parameter_NvEntryCrc( parameter_table_entry );

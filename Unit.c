@@ -64,6 +64,7 @@ const char * Unit_GetString(unit_t unit)
     [UNIT_K_WATT_HOUR]          = "kWh",
     [UNIT_M_WATT]               = "mW",
     [UNIT_WATT]                 = "W",
+    [UNIT_K_WATT]               = "kW",
     [UNIT_M_AMPERE]             = "mA",
     [UNIT_AMPERE]               = "A",
     [UNIT_AMPERE_PER_SECOND]    = "A/s",
@@ -80,7 +81,7 @@ const char * Unit_GetString(unit_t unit)
     [UNIT_METRE_PER_SECOND]     = "m/s",
     [UNIT_K_METRE_PER_HOUR]     = "km/h",
   };
-  if (unit >= NR_OF_UNITS)
+  if( (unit >= NR_OF_UNITS) || (NULL == unit_str[unit]) )
     unit = UNIT_NONE;
   return unit_str[unit];
 #else

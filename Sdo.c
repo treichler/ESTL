@@ -34,14 +34,6 @@
 #include "Sdo.h"
 
 
-#ifndef ESTL_TERMINAL_REMOTE_PARAMETER_CON_TIMEOUT
-#define ESTL_TERMINAL_REMOTE_PARAMETER_CON_TIMEOUT      (1000)  //!< default connection timeout [ms]
-#warning "SDO_TIMEOUT is set to default value"
-#endif
-
-
-
-
 typedef enum {
   SDO_REQ_FAIL,
   SDO_REQ_TIMEOUT,
@@ -59,9 +51,10 @@ struct {
   uint8_t          * exp_valid_bytes;
   uint32_t         seg_buffer_size;
   uint32_t         abort_code;
+  uint16_t         timeout;
+  uint16_t         timeout_setpoint;
   uint8_t          seg_id;
   sdo_req_state_t  req_state;
-  uint16_t         timeout;
   uint8_t          * req_data;                          //!<  Pointer to SDO-request's message object 8-byte data buffer
   bool_t           (* SdoRequestFunction)(uint8_t);     //!<  SDO request function
   bool_t           (* SdoIsAvailableFunction)(void);    //!<  SDO request is busy function
@@ -70,7 +63,7 @@ struct {
 } Sdo_data;
 
 
-bool_t Sdo_Init( uint8_t * req_data, bool_t (* SdoRequestFunction)(uint8_t), bool_t (* SdoIsAvailableFunction)(void), uint8_t nr_of_nodes )
+bool_t Sdo_Init( uint8_t * req_data, bool_t (* SdoRequestFunction)(uint8_t), bool_t (* SdoIsAvailableFunction)(void), uint8_t nr_of_nodes, uint16_t timeout )
 {
   if( req_data && SdoRequestFunction && SdoIsAvailableFunction )
   {
@@ -78,6 +71,7 @@ bool_t Sdo_Init( uint8_t * req_data, bool_t (* SdoRequestFunction)(uint8_t), boo
     Sdo_data.SdoRequestFunction = SdoRequestFunction;
     Sdo_data.SdoIsAvailableFunction = SdoIsAvailableFunction;
     Sdo_data.nr_of_nodes = nr_of_nodes;
+    Sdo_data.timeout_setpoint = timeout;
     Sdo_data.is_initialized = TRUE;
   }
   else
@@ -152,7 +146,7 @@ bool_t Sdo_ExpRead( uint8_t node_id, uint16_t index, uint8_t subindex, int32_t* 
     Sdo_data.req_data[6] = 0x00;
     Sdo_data.req_data[7] = 0x00;
 
-    Sdo_data.timeout = ESTL_TERMINAL_REMOTE_PARAMETER_CON_TIMEOUT;
+    Sdo_data.timeout = Sdo_data.timeout_setpoint;
     return Sdo_data.SdoRequestFunction( node_id );
   }
   return FALSE;
@@ -180,7 +174,7 @@ bool_t Sdo_ExpWrite( uint8_t node_id, uint16_t index, uint8_t subindex, int32_t 
     Sdo_data.req_data[6] = (uint8_t)(data >> 16);
     Sdo_data.req_data[7] = (uint8_t)(data >> 24);
 
-    Sdo_data.timeout = ESTL_TERMINAL_REMOTE_PARAMETER_CON_TIMEOUT;
+    Sdo_data.timeout = Sdo_data.timeout_setpoint;
     return Sdo_data.SdoRequestFunction( node_id );
   }
   return FALSE;
@@ -205,7 +199,7 @@ bool_t Sdo_SegRead( uint8_t node_id, uint16_t index, uint8_t subindex, void* buf
     Sdo_data.req_data[6] = 0x00;
     Sdo_data.req_data[7] = 0x00;
 
-    Sdo_data.timeout = ESTL_TERMINAL_REMOTE_PARAMETER_CON_TIMEOUT;
+    Sdo_data.timeout = Sdo_data.timeout_setpoint;
     return Sdo_data.SdoRequestFunction( node_id );
   }
   return FALSE;
@@ -306,7 +300,7 @@ bool_t Sdo_RxHandler( uint8_t * rx, uint8_t rx_id, uint8_t * resp, uint8_t * res
         is_resp = TRUE;
       }
       // reinitialize timeout
-      Sdo_data.timeout = ESTL_TERMINAL_REMOTE_PARAMETER_CON_TIMEOUT;
+      Sdo_data.timeout = Sdo_data.timeout_setpoint;
     }
   }
   else if( Sdo_data.req_state == SDO_REQ_SEG_WRITE_BUSY )

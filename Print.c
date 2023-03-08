@@ -225,7 +225,7 @@ void Print_Format(void* putp, putcf putf, int *cnt, const char *fmt, va_list va)
                       *bf_ptr++ = '-';
                     }
                     w = w - (dl + 1);
-                    ui2a( (int)q15_GetMantissa(q_val), 10, 0, bf_ptr );
+                    ui2a( (int)q15_to_int16(q_val), 10, 0, bf_ptr );
                     putchw(putp,putf,cnt,(w > 0) ? w : 0,lz,bf);
                     putf(putp,'.',cnt);
                     ui2a( q2d( (int)q15_GetFraction(q_val), dl ), 10, 0, bf );

@@ -63,11 +63,11 @@ int32_t Debug_GetValue(uint8_t index)
 }
 
 
-error_code_t Debug_AddrParameterFunction(parameter_function_t parameter_function, int32_t * address)
+error_code_t Debug_AddrParameterFunction(function_call_t function_call, int32_t * address)
 {
-  if (parameter_function == PARAMETER_READ)
+  if (function_call == FUNCTION_READ)
     *address = Debug_data.debug[Debug_data.index].address;
-  if (parameter_function == PARAMETER_WRITE)
+  if (function_call == FUNCTION_WRITE)
   {
     if( (! Parameter_CurrentAccessLevelIsDeveloper()) && (! DebugAccess_AddressIsWhiteListed(*address)) )
     {
@@ -81,11 +81,11 @@ error_code_t Debug_AddrParameterFunction(parameter_function_t parameter_function
 }
 
 
-error_code_t Debug_MaskParameterFunction(parameter_function_t parameter_function, int32_t * mask)
+error_code_t Debug_MaskParameterFunction(function_call_t function_call, int32_t * mask)
 {
-  if (parameter_function == PARAMETER_READ)
+  if (function_call == FUNCTION_READ)
     *mask = Debug_data.debug[Debug_data.index].mask;
-  if (parameter_function == PARAMETER_WRITE)
+  if (function_call == FUNCTION_WRITE)
   {
     if( (! Parameter_CurrentAccessLevelIsDeveloper()) && (! DebugAccess_AddressIsWhiteListed(Debug_data.debug[Debug_data.index].address)) )
     {
@@ -99,23 +99,23 @@ error_code_t Debug_MaskParameterFunction(parameter_function_t parameter_function
 }
 
 
-error_code_t Debug_IndexParameterFunction(parameter_function_t parameter_function, int32_t * index)
+error_code_t Debug_IndexParameterFunction(function_call_t function_call, int32_t * index)
 {
-  if( parameter_function == PARAMETER_READ )
+  if( function_call == FUNCTION_READ )
     *index = (int32_t)Debug_data.index + 1;
-  if( parameter_function == PARAMETER_WRITE )
+  if( function_call == FUNCTION_WRITE )
     Debug_data.index = (*index) - 1;
   return OK;
 }
 
 
-error_code_t Debug_DataParameterFunction(parameter_function_t parameter_function, int32_t * value)
+error_code_t Debug_DataParameterFunction(function_call_t function_call, int32_t * value)
 {
   int32_t address, mask;
   address = Debug_data.debug[Debug_data.index].address;
   mask = Debug_data.debug[Debug_data.index].mask;
 
-  if( parameter_function == PARAMETER_READ )
+  if( function_call == FUNCTION_READ )
   {
     // if mask is zero return value from address lookup table
     if (mask == 0x00000000)
@@ -123,7 +123,7 @@ error_code_t Debug_DataParameterFunction(parameter_function_t parameter_function
     else
       *value = Debug_GetValue(Debug_data.index);
   }
-  if( parameter_function == PARAMETER_WRITE )
+  if( function_call == FUNCTION_WRITE )
   {
     if( ! Parameter_CurrentAccessLevelIsDeveloper() )
       return NOT_ACCESSIBLE;

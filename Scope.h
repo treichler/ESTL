@@ -105,7 +105,7 @@ void Scope_Init( bool_t (* PrintFunction)(uint16_t, scope_sample_t*) );
  *                                 on read it contains the scope's current state.
  * @return                         Error code depending if command was successful
  */
-error_code_t Scope_CmdParameterFunction(parameter_function_t parameter_function, int32_t * cmd);
+error_code_t Scope_CmdParameterFunction(function_call_t function_call, int32_t * cmd);
 
 
 /**
@@ -127,7 +127,7 @@ error_code_t Scope_CmdParameterFunction(parameter_function_t parameter_function,
  *   @retval   SCOPE_IS_BUSY       Setting is prohibited as long as scope is busy.
  *   @retval   OK                  In every other case.
  */
-error_code_t Scope_SetupParameterFunction(parameter_function_t parameter_function, int32_t * param);
+error_code_t Scope_SetupParameterFunction(function_call_t function_call, int32_t * param);
 
 
 /**

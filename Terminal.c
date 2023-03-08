@@ -660,7 +660,7 @@ error_code_t Terminal_InitCanOpenTable( const terminal_t * terminal, uint8_t nod
     parameter_data ++;
 
     busy_bar += busy_inc;
-    while( q15_GetMantissa(busy_bar) )
+    while( q15_to_int16(busy_bar) )
     {
       Terminal_printf(terminal, "=");
       busy_bar -= Q15_FACTOR;
@@ -687,7 +687,7 @@ error_code_t Terminal_InitCanOpenTable( const terminal_t * terminal, uint8_t nod
     parameter_data ++;
 
     busy_bar += busy_inc;
-    while( q15_GetMantissa(busy_bar) )
+    while( q15_to_int16(busy_bar) )
     {
       Terminal_printf(terminal, "=");
       busy_bar -= Q15_FACTOR;

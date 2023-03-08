@@ -92,6 +92,17 @@ typedef enum {
 
 
 /**
+ * Define function call type.
+ */
+typedef enum {
+  FUNCTION_INIT,       //!<  Indicates the initial call of a function
+  FUNCTION_SAVE,       //!<  Indicates that function is called in a save context
+  FUNCTION_READ,       //!<  Function call requires read-back
+  FUNCTION_WRITE       //!<  Function call performs writing
+} function_call_t;
+
+
+/**
  * Define the q15.16 fixed point data-type.
  */
 typedef int32_t q15_t;
@@ -123,14 +134,26 @@ typedef int32_t q15_t;
  */
 #define Q15_MAX INT32_MAX
 
+
 /**
- * Get the mantissa of a q15.16 fixed point representation.
- * @param [in] q15      The given q15.16 fixed point value
- * @return              The value's mantissa
+ * Convert a 16 bit integer to q15.6 representation.
+ * @param [in] val      Integer value to be converted
+ * @return              q15.16 representation
  */
-static inline int16_t q15_GetMantissa(q15_t q15)
+static inline q15_t int16_to_q15( int16_t val )
 {
-  return (int16_t)(q15 >> 16);
+  return (q15_t)val << Q15_SHIFT;
+}
+
+
+/**
+ * Get the integer of a q15.16 fixed point representation.
+ * @param [in] q15      q15.16 fixed point value to be converted
+ * @return              Integer representation
+ */
+static inline int16_t q15_to_int16(q15_t q15)
+{
+  return (int16_t)(q15 >> Q15_SHIFT);
 }
 
 
@@ -141,7 +164,7 @@ static inline int16_t q15_GetMantissa(q15_t q15)
  */
 static inline uint16_t q15_GetFraction(q15_t q15)
 {
-  return (uint16_t)(q15 & 0xFFFF);
+  return (uint16_t)(q15 & ((1 << Q15_SHIFT) - 1));
 }
 
 

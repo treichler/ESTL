@@ -33,7 +33,7 @@
 
 
 /**
- * @ingroup  ESTL
+ * @ingroup  CANOPEN
  * @defgroup SDO  Sdo
  * @brief    Service Data Object module
  *
@@ -113,12 +113,13 @@
  * @param req_data                      Pointer to 8-byte array
  * @param SdoRequestFunction            Target dependent SDO-request function
  * @param SdoIsAvailableFunction        Target dependent SDO-is-available function
- * @param nr_of_nodes                   TODO to be checked if really necessary
+ * @param nr_of_nodes                   Number of accessible SDO nodes
+ * @param timeout                       Connection timeout, needs to be higher than zero
  * @return                              Success of initialization
  *   @retval    FALSE                   SDO could not be initialized
  *   @retval    TRUE                    SDO was successfully initialized
  */
-bool_t Sdo_Init( uint8_t * req_data, bool_t (* SdoRequestFunction)(uint8_t), bool_t (* SdoIsAvailableFunction)(void), uint8_t nr_of_nodes );
+bool_t Sdo_Init( uint8_t * req_data, bool_t (* SdoRequestFunction)(uint8_t), bool_t (* SdoIsAvailableFunction)(void), uint8_t nr_of_nodes, uint16_t timeout );
 
 
 /**
