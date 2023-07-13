@@ -60,14 +60,14 @@ uint16_t Parse_StrToFrac(char * str)
 }
 
 
-int32_t Parse_StrToInt(char ** str, uint8_t radix)
+int32_t Parse_StrToUint(char ** str, uint8_t radix)
 {
   char *parse_end, *str_end;
   char digit;
   int32_t value = 0, factor = 1;
 
   parse_end = *str;
-  while( /*(*parse_end == '-') ||*/ (*parse_end >= '0' && *parse_end <= '9') || \
+  while( (*parse_end >= '0' && *parse_end <= '9') || \
          (*parse_end >= 'A' && *parse_end <= 'F') || (*parse_end >= 'a' && *parse_end <= 'f') )
     parse_end ++;
 
@@ -95,7 +95,8 @@ int32_t Parse_StrToInt(char ** str, uint8_t radix)
 int32_t Parse_StrToValue(char * str) //, int8_t radix)
 {
   int32_t value = 0;
-  int8_t radix = 10, value_is_negative = 0;
+  int8_t radix = 10;
+  bool_t value_is_negative = FALSE;
 
   // if argument starts with '0' it can be [hex], [oct], [bin] or zero
   if( *str == '0' )
@@ -123,15 +124,39 @@ int32_t Parse_StrToValue(char * str) //, int8_t radix)
   }
   if( *str == '-' )
   {
-    value_is_negative = 1;
+    value_is_negative = TRUE;
     str ++;
   }
-  value = Parse_StrToInt(&str, radix);
+  value = Parse_StrToUint(&str, radix);
   if( (*str == '.') && (radix == 10) && (value <= INT16_MAX) && (value >= INT16_MIN) )
   {
+    uint32_t dot_val = value;
+
     // evaluate value as fixed point number
     str++;
     value = (value << 16) + Parse_StrToFrac(str);
+
+    // check if value is in representation aa.bb.cc respectively aa.bb.cc.dd
+    // where aa, bb, cc and dd in range [0..255]
+    if( (255 >= dot_val) && (! value_is_negative) )
+    {
+      uint32_t tmp = Parse_StrToUint(&str, radix);
+      if( (255 >= tmp) && (*str == '.') )
+      {
+        str ++;
+        dot_val <<= 16;
+        dot_val  |= (tmp << 8);
+        tmp = Parse_StrToUint(&str, radix);
+        dot_val |= tmp;
+        if( '.' == *str)
+        {
+          str ++;
+          dot_val <<= 8;
+          dot_val  |= Parse_StrToUint(&str, radix);
+        }
+        value = dot_val;
+      }
+    }
   }
 
   if( value_is_negative )

@@ -206,6 +206,7 @@ void ParameterSdo_MsgSetVal( uint8_t * msg, uint32_t value )
 
 uint8_t ParameterSdo_CallbackSdoReq( uint8_t length_req, uint8_t *req_ptr, uint8_t *length_resp, uint8_t *resp_ptr )
 {
+  *length_resp = 8;
   if( 8 == length_req )
   {
     static uint16_t read_ofs;
@@ -240,7 +241,6 @@ uint8_t ParameterSdo_CallbackSdoReq( uint8_t length_req, uint8_t *req_ptr, uint8
             read_buffer = (uint8_t*)Parameter_GetHelp(parameter_index);
 
           buffer_len = strlen( (char*)read_buffer ) + 1;
-          *length_resp = 8;
           resp_ptr[0] = 0x41; // set size indicated
           ParameterSdo_MsgSetVal( resp_ptr, buffer_len );
           return CAN_SDOREQ_HANDLED_SEND;
@@ -338,7 +338,6 @@ uint8_t ParameterSdo_CallbackSdoReq( uint8_t length_req, uint8_t *req_ptr, uint8
           read_buffer = (uint8_t*)firmware_revision;
 
         buffer_len = strlen( (char*)read_buffer ) + 1;
-        *length_resp = 8;
         resp_ptr[0] = 0x41; // set size indicated
         ParameterSdo_MsgSetVal( resp_ptr, buffer_len );
         return CAN_SDOREQ_HANDLED_SEND;
@@ -389,7 +388,6 @@ uint8_t ParameterSdo_CallbackSdoReq( uint8_t length_req, uint8_t *req_ptr, uint8
     else if( (req_ptr[0] & 0xE0) == 0x60 ) // respond to segmented read
     {
       uint8_t * data = &resp_ptr[1];
-      *length_resp = 8;
       i = 7;
       while( i && (read_ofs < buffer_len) )
       {

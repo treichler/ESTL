@@ -131,6 +131,9 @@ void Unit_ValueToString(char * str, int str_len, int32_t value, repr_t repr)
     case REPR_Q15_5:
       fmt = "%7.5q";
       break;
+    case REPR_IP_V4:
+      snprintf(str, str_len, "%d.%d.%d.%d", (value >> 24) & 0xFF, (value >> 16) & 0xFF, (value >> 8) & 0xFF, value & 0xFF);
+      return;
     default:
       fmt = "%d";
       break;

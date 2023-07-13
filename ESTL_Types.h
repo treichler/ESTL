@@ -87,6 +87,7 @@ typedef enum {
   REPR_Q15_3,           //!< Fixed point q15.16 with 3 decimal precision
   REPR_Q15_4,           //!< Fixed point q15.16 with 4 decimal precision
   REPR_Q15_5,           //!< Fixed point q15.16 with 5 decimal precision
+  REPR_IP_V4,           //!< IP V4 address representation (e.g. 192.168.1.2)
   NR_OF_REPRS           //!< This needs to be the last enumeration entry
 } repr_t;
 
@@ -166,6 +167,13 @@ static inline uint16_t q15_GetFraction(q15_t q15)
 {
   return (uint16_t)(q15 & ((1 << Q15_SHIFT) - 1));
 }
+
+
+/**
+ * Helper to get IP like constants converted to int32_t representation
+ * @code ip_t value = IP(192,168,1,42); @endcode
+ */
+#define IP(a,b,c,d)     ( ((uint32_t)(a & 0xFF) << 24) | ((uint32_t)(b & 0xFF) << 16) | ((uint32_t)(c & 0xFF) << 8) | (uint32_t)(d & 0xFF) )
 
 
 #endif // __ESTL_TYPES_H__

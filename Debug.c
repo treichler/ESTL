@@ -69,7 +69,9 @@ error_code_t Debug_AddrParameterFunction(function_call_t function_call, int32_t 
     *address = Debug_data.debug[Debug_data.index].address;
   if (function_call == FUNCTION_WRITE)
   {
-    if( (! Parameter_CurrentAccessLevelIsDeveloper()) && (! DebugAccess_AddressIsWhiteListed(*address)) )
+    if( (0 != Debug_data.debug[Debug_data.index].mask) &&
+        (! Parameter_CurrentAccessLevelIsDeveloper()) &&
+        (! DebugAccess_AddressIsWhiteListed(*address)) )
     {
       Debug_data.debug[Debug_data.index].address = 0;
       Debug_data.debug[Debug_data.index].mask    = 0;
@@ -87,7 +89,9 @@ error_code_t Debug_MaskParameterFunction(function_call_t function_call, int32_t 
     *mask = Debug_data.debug[Debug_data.index].mask;
   if (function_call == FUNCTION_WRITE)
   {
-    if( (! Parameter_CurrentAccessLevelIsDeveloper()) && (! DebugAccess_AddressIsWhiteListed(Debug_data.debug[Debug_data.index].address)) )
+    if( (0 != *mask) &&
+        (! Parameter_CurrentAccessLevelIsDeveloper()) &&
+        (! DebugAccess_AddressIsWhiteListed(Debug_data.debug[Debug_data.index].address)) )
     {
       Debug_data.debug[Debug_data.index].address = 0;
       Debug_data.debug[Debug_data.index].mask    = 0;
