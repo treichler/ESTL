@@ -163,9 +163,9 @@ static inline int16_t q15_to_int16(q15_t q15)
  * @param [in] q15      The given q15.16 fixed point value
  * @return              The value's fraction
  */
-static inline uint16_t q15_GetFraction(q15_t q15)
+static inline int16_t q15_GetFraction(q15_t q15)
 {
-  return (uint16_t)(q15 & ((1 << Q15_SHIFT) - 1));
+  return (int16_t)(q15 & ((1UL << Q15_SHIFT) - 1));
 }
 
 

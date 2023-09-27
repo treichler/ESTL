@@ -328,8 +328,8 @@ uint8_t ParameterSdo_CallbackSdoReq( uint8_t length_req, uint8_t *req_ptr, uint8
       else if( (index == 0x1008) || (index == 0x100A) )
       {
         // segmented read -- response to product-name and revision
-        const char * firmware_name = FIRMWARE_NAME;
-        const char * firmware_revision = FIRMWARE_VERSION;
+        static const char * firmware_name = FIRMWARE_NAME;
+        static const char * firmware_revision = FIRMWARE_VERSION;
         read_ofs = 0;
 
         if( index == 0x1008 )     // FIRMWARE_NAME

@@ -102,11 +102,6 @@ static void Terminal_PrintParameterDetails( const terminal_t * terminal, paramet
 static void Terminal_ParameterNotFoundMessage( const terminal_t * terminal, char *rx_buffer );
 static void Terminal_PrintErrorMessage( const terminal_t * terminal, error_code_t error );
 
-#if( defined(ESTL_ENABLE_SCOPE) && defined(ESTL_ENABLE_DEBUG) )
-static bool_t Terminal_PrintScope( uint16_t index, scope_sample_t * scope_sample );
-#endif
-
-
 #if( defined(ESTL_ENABLE_TERMINAL_REMOTE_PARAMETER) )
 static bool_t Terminal_PrintPdoScope( scope_pdo_sample_t * scope_pdo_sample );
 static error_code_t Terminal_InitCanOpenTable( const terminal_t * terminal, uint8_t node_id );

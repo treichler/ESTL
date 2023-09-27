@@ -53,14 +53,15 @@ uint16_t Parse_StrToFrac(char * str);
 
 
 /**
- * Convert a number string to integer value according to the given radix.
- * After parsing the string's address is set to the end of the parsed number.
+ * Convert a number string to unsigned integer value according to the
+ * given radix. After parsing the string's address is set to the end
+ * of the parsed number.
  *
  * @param     str        Pointer to number string's address
  * @param     radix      Number's radix
  * @return               Integer value
  */
-int32_t Parse_StrToInt(char ** str, uint8_t radix);
+uint32_t Parse_StrToUint(char ** str, uint8_t radix);
 
 
 /**

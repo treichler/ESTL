@@ -33,6 +33,9 @@
 #define __TERMINAL_H__
 
 
+#include "ESTL_Config.h"
+#include "Scope.h"
+
 /**
  * @ingroup ESTL
  * @defgroup TERMINAL  Terminal
@@ -103,7 +106,7 @@ typedef struct {
  * @param     terminals            Array containing the transmit/receive functions.
  * @param     number_of_terminals  number of provided transmit/receive functions.
  */
-void Terminal_Init( const terminal_t * terminals, uint8_t number_of_terminals );
+extern void Terminal_Init( const terminal_t * terminals, uint8_t number_of_terminals );
 
 
 /**
@@ -112,7 +115,22 @@ void Terminal_Init( const terminal_t * terminals, uint8_t number_of_terminals );
  * This function might be time consuming ant therefore it should be called
  * in some kind of idle loop to avoid blocking of higher prioritized tasks.
  */
-void Terminal_Task(void);
+extern void Terminal_Task(void);
+
+
+#if( defined(ESTL_ENABLE_SCOPE) && defined(ESTL_ENABLE_DEBUG) )
+/**
+ * Print scope data to Terminal.
+ * This function complies according to Scope_Init().
+ *
+ * @param index         Represents the scope's x-axis
+ * @param scope_sample  Contains the scope's y-axis data
+ * @return              Process state of scope data
+ *   @retval TRUE       New scope data is processed and will be printed
+ *   @retval FALSE      Scope data could not be processed
+ */
+extern bool_t Terminal_PrintScope( uint16_t index, scope_sample_t * scope_sample );
+#endif
 
 
 /**

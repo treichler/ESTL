@@ -60,11 +60,11 @@ uint16_t Parse_StrToFrac(char * str)
 }
 
 
-int32_t Parse_StrToUint(char ** str, uint8_t radix)
+uint32_t Parse_StrToUint(char ** str, uint8_t radix)
 {
   char *parse_end, *str_end;
   char digit;
-  int32_t value = 0, factor = 1;
+  uint32_t value = 0, factor = 1;
 
   parse_end = *str;
   while( (*parse_end >= '0' && *parse_end <= '9') || \
@@ -85,7 +85,7 @@ int32_t Parse_StrToUint(char ** str, uint8_t radix)
       break;
 
     value += digit * factor;
-    factor *= (int32_t)radix;
+    factor *= (uint32_t)radix;
   }
   *str = str_end;
   return value;
