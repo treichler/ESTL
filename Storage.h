@@ -31,28 +31,52 @@
 #ifndef __STORAGE_H__
 #define __STORAGE_H__
 
+#include "ESTL_Defines.h"
+#include "ESTL_Config.h"
+
 
 /**
  * @ingroup  ESTL
  * @defgroup STORAGE  Storage
  * @brief    Storage module
  *
- * The storage module provides functionality to save data to some kind of
- * non-volatile memory, where the data is categorized according to its usage.
- * Every data-block holds its header containing data size and a checksum
- * to grant data integrity.
+ * The storage module provides a common interface to save and access data in
+ * some kind of non-volatile memory, where the data is categorized according
+ * to its usage (see ::storage_id_t).
+ * Depending on the memory technology dedicated algorithms are required.
+ * The dedicated implementations could be found in storage's sub-modules
+ * @ref STORAGE_EEPROM and @ref STORAGE_FLASH.
+ * In the file ESTL_Config.h the desired algorithm is configured.
+ * All algorithms have in common, that each data-block has a related header
+ * containing data-block identifier, data size and a checksum to grant data
+ * integrity.
  * @{
  */
 
 /**
+ * @enum storage_id_t
+ *
  * Enumerate the different data-blocks
  */
 typedef enum {
-  STORAGE_PARAMETER_IMAGE,
-  STORAGE_APPLICATION_IMAGE,
-  STORAGE_ADAPTIVE_DATA_IMAGE,
-  NR_OF_STORAGES
+  STORAGE_PARAMETER_IMAGE,      //!< Storage-block identifier for parameter image
+  STORAGE_APPLICATION_IMAGE,    //!< Storage-block identifier for non-volatile application data
+  STORAGE_ADAPTIVE_DATA_IMAGE,  //!< Storage-block identifier for adaptive data
+  NR_OF_STORAGES                //!< Reserved for indicating the amount of storage-blocks
 } storage_id_t;
+
+
+/** @cond */
+// EEprom storage
+extern error_code_t StorageEeprom_Init( void );
+extern error_code_t StorageEeprom_Write( storage_id_t index, void *data, int16_t size );
+extern int32_t StorageEeprom_Read( storage_id_t index, void *data, int16_t size );
+
+// Flash storage
+extern error_code_t StorageFlash_Init( void );
+extern error_code_t StorageFlash_Write( storage_id_t index, void *data, int16_t size );
+extern int32_t StorageFlash_Read( storage_id_t index, void *data, int16_t size );
+/** @endcond */
 
 
 /**
@@ -62,10 +86,18 @@ typedef enum {
  *   @retval  STORAGE_ENUM_MISMATCH  Storage_table does not fit to data-block enumeration
  *   @retval  STORAGE_SIZE_MISMATCH  Requested data-block sizes do not fit into non-volatile memory
  */
-error_code_t Storage_Init(void);
-
-
-// error_code_t Storage_Delete(storage_id_t index);
+inline error_code_t Storage_Init(void)
+{
+#if( ESTL_STORAGE_HARDWARE == ESTL_STORAGE_HARDWARE_FAKE_NV_MEMORY )
+  return StorageEeprom_Init();
+#elif( ESTL_STORAGE_HARDWARE == ESTL_STORAGE_HARDWARE_I2CEEPROM )
+  return StorageEeprom_Init();
+#elif( ESTL_STORAGE_HARDWARE == ESTL_STORAGE_HARDWARE_FLASH )
+  return StorageFlash_Init();
+#else
+  #error "Unknown ESTL_STORAGE_HARDWARE"
+#endif
+}
 
 
 /**
@@ -76,7 +108,16 @@ error_code_t Storage_Init(void);
  * @return                           Error code depending on write success.
  *   @retval  OK                     On success.
  */
-error_code_t Storage_Write(storage_id_t index, void *data, int16_t size);
+inline error_code_t Storage_Write(storage_id_t index, void *data, int16_t size)
+{
+#if( ESTL_STORAGE_HARDWARE == ESTL_STORAGE_HARDWARE_FAKE_NV_MEMORY )
+  return StorageEeprom_Write( index, data, size );
+#elif( ESTL_STORAGE_HARDWARE == ESTL_STORAGE_HARDWARE_I2CEEPROM )
+  return StorageEeprom_Write( index, data, size );
+#elif( ESTL_STORAGE_HARDWARE == ESTL_STORAGE_HARDWARE_FLASH )
+  return StorageFlash_Write( index, data, size );
+#endif
+}
 
 
 /**
@@ -87,7 +128,16 @@ error_code_t Storage_Write(storage_id_t index, void *data, int16_t size);
  * @return                           Zero and positive values represent the read data size,
  *                                   negative values represent the error code on read fail.
  */
-int32_t Storage_Read(storage_id_t index, void *data, int16_t size);
+inline int32_t Storage_Read(storage_id_t index, void *data, int16_t size)
+{
+#if( ESTL_STORAGE_HARDWARE == ESTL_STORAGE_HARDWARE_FAKE_NV_MEMORY )
+  return StorageEeprom_Read( index, data, size );
+#elif( ESTL_STORAGE_HARDWARE == ESTL_STORAGE_HARDWARE_I2CEEPROM )
+  return StorageEeprom_Read( index, data, size );
+#elif( ESTL_STORAGE_HARDWARE == ESTL_STORAGE_HARDWARE_FLASH )
+  return StorageFlash_Read( index, data, size );
+#endif
+}
 
 
 /**

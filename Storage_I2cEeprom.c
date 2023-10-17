@@ -75,6 +75,12 @@
 
 
 /**
+ * @addtogroup STORAGE_I2CEEPROM
+ * @{
+ */
+
+
+/**
  * @name Definitions for I2C EEprom access
  * @{
  */
@@ -182,3 +188,8 @@ error_code_t StorageI2cEeprom_NvMemRead(uint16_t addr, uint8_t *data, uint16_t s
 
   return OK;
 }
+
+
+/**
+ * @} end of STORAGE_I2CEEPROM
+ */

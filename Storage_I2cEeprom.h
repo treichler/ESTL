@@ -33,8 +33,8 @@
 
 
 /**
- * @ingroup  STORAGE
- * @defgroup I2CEEPROM_STORAGE  I2C EEprom Storage
+ * @ingroup  STORAGE_EEPROM
+ * @defgroup STORAGE_I2CEEPROM  I2C EEprom Storage
  * @brief External I2C EEprom Storage Module
  *
  * This module provides functionality to access an externally connected
@@ -77,7 +77,7 @@ error_code_t StorageI2cEeprom_NvMemRead(uint16_t addr, uint8_t *data, uint16_t s
 
 
 /**
- * @} end of I2CEEPROM_STORAGE
+ * @} end of STORAGE_I2CEEPROM
  */
 
 #endif // __STORAGE_I2CEEPROM_H__

@@ -19,7 +19,7 @@
 //----------------------------------------------------------------------------//
 
 /**
- * @file Storage.c
+ * @file Storage_Eeprom.c
  *
  * @author Clemens Treichler clemens.treichler(at)aon.at
  *
@@ -28,8 +28,6 @@
  * @license Released under the GNU Lesser General Public License
  */
 
-#include "ESTL_Defines.h"
-#include "ESTL_Config.h"
 #include "ESTL_Types.h"
 #include <string.h>
 #include "Error.h"
@@ -51,6 +49,21 @@
 #endif
 
 
+/**
+ * @ingroup  STORAGE
+ * @defgroup STORAGE_EEPROM  EEprom-based Storage
+ * @brief    Uses EEproms for non-volatile data storage
+ *
+ * EEprom-based storage module relies on the advantage of random access and
+ * in-place rewriting the storage cells.
+ * Therefore the location and the size for each data-block (see ::::storage_id_t)
+ * is fixed and has to be defined in advance.
+ * The hardware-specific implementation for EEproms could be found in
+ * @ref STORAGE_I2CEEPROM.
+ * @{
+ */
+
+
 //-------------------------------------------------------------------------------------------------
 //  Local prototypes
 //-------------------------------------------------------------------------------------------------
@@ -62,7 +75,8 @@ static inline int32_t Storage_GetSize(void);
 struct {
   bool_t        is_initialized;
 #if (ESTL_STORAGE_HARDWARE == ESTL_STORAGE_HARDWARE_FAKE_NV_MEMORY)
-  uint8_t       fake_nv_memory[256];
+#define FAKE_NV_MEMORY_size  (256)
+  uint8_t       fake_nv_memory[FAKE_NV_MEMORY_size];
 #endif
 } Storage_data;
 
@@ -101,7 +115,7 @@ int32_t Storage_GetSize(void)
 error_code_t Storage_NvMemWrite(uint16_t addr, uint8_t *data, uint16_t size)
 {
   if((addr + size) >= sizeof(Storage_data.fake_nv_memory))
-    return STORAGE_NOT_ACCESSIBLE;
+    return NOT_ACCESSIBLE;
   memcpy(Storage_data.fake_nv_memory+addr, data, size);
   return OK;
 }
@@ -109,13 +123,16 @@ error_code_t Storage_NvMemWrite(uint16_t addr, uint8_t *data, uint16_t size)
 error_code_t Storage_NvMemRead(uint16_t addr, uint8_t *data, uint16_t size)
 {
   if((addr + size) >= sizeof(Storage_data.fake_nv_memory))
-    return STORAGE_NOT_ACCESSIBLE;
+    return NOT_ACCESSIBLE;
   memcpy(data, Storage_data.fake_nv_memory+addr, size);
   return OK;
 }
+
+int32_t Storage_GetSize(void)
+{
+  return FAKE_NV_MEMORY_size;
+}
 /** @} */
-#else
-  #error "Unknown ESTL_STORAGE_HARDWARE"
 #endif
 
 
@@ -158,7 +175,10 @@ storage_entry_t Storage_table[] = {
 #define NR_OF_STORAGE_ENTRIES  (sizeof(Storage_table) / sizeof(storage_entry_t))
 
 
-error_code_t Storage_Init(void)
+/**
+ * See Storage_Init() for further information.
+ */
+error_code_t StorageEeprom_Init(void)
 {
   uint16_t i;
   uint32_t addr = STORAGE_START_ADDRESS;
@@ -179,19 +199,9 @@ error_code_t Storage_Init(void)
 
 
 /**
- * TODO to be implemented...
+ * See Storage_Write() for further information.
  */
-error_code_t Storage_Delete(storage_id_t index)
-{
-  if( ! Storage_data.is_initialized )
-    return STORAGE_NOT_INITIALIZED;
-  if( index >= NR_OF_STORAGES )
-    return INDEX_OUT_OF_BOUNDARY;
-  return OK;
-}
-
-
-error_code_t Storage_Write(storage_id_t index, void *data, int16_t size)
+error_code_t StorageEeprom_Write(storage_id_t index, void *data, int16_t size)
 {
   error_code_t write_status;
   storage_header_t header;
@@ -215,7 +225,10 @@ error_code_t Storage_Write(storage_id_t index, void *data, int16_t size)
 }
 
 
-int32_t Storage_Read(storage_id_t index, void *data, int16_t size)
+/**
+ * See Storage_Read() for further information.
+ */
+int32_t StorageEeprom_Read(storage_id_t index, void *data, int16_t size)
 {
   error_code_t read_status;
   storage_header_t header;
@@ -238,3 +251,8 @@ int32_t Storage_Read(storage_id_t index, void *data, int16_t size)
     return (int32_t)STORAGE_CRC_MISMATCH;
   return header.size;
 }
+
+
+/**
+ * @} end of STORAGE_EEPROM
+ */

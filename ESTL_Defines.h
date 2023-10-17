@@ -52,8 +52,9 @@
  * @brief Enumerate different storage hardware variants
  * @{
  */
-#define ESTL_STORAGE_HARDWARE_FAKE_NV_MEMORY     (1)     //!< Emulate storage functionality in RAM
-#define ESTL_STORAGE_HARDWARE_I2CEEPROM          (2)     //!< EEprom connected to I2C
+#define ESTL_STORAGE_HARDWARE_FAKE_NV_MEMORY    (1)     //!< Emulate storage functionality in RAM
+#define ESTL_STORAGE_HARDWARE_I2CEEPROM         (2)     //!< EEprom connected to I2C
+#define ESTL_STORAGE_HARDWARE_FLASH             (3)     //!< Internal flash
 /** @} */
 
 
@@ -62,11 +63,11 @@
  * @brief Enumerate different EEprom variants
  * @{
  */
-#define ESTL_STORAGE_I2CEEPROM_24LC02   		(1)     //!< 24LC02  2kbit/256byte EEprom
-#define ESTL_STORAGE_I2CEEPROM_24LC04   		(2)     //!< 24LC04  4kbit/512byte EEprom
-#define ESTL_STORAGE_I2CEEPROM_24LC08   		(3)     //!< 24LC08  8kbit/1kbyte EEprom
-#define ESTL_STORAGE_I2CEEPROM_24LC16   		(4)     //!< 24LC16 16kbit/2kbyte EEprom
-#define ESTL_STORAGE_I2CEEPROM_24LC32   		(5)     //!< 24LC32 32kbit/4kbyte EEprom
+#define ESTL_STORAGE_I2CEEPROM_24LC02           (1)     //!< 24LC02  2kbit/256byte EEprom
+#define ESTL_STORAGE_I2CEEPROM_24LC04           (2)     //!< 24LC04  4kbit/512byte EEprom
+#define ESTL_STORAGE_I2CEEPROM_24LC08           (3)     //!< 24LC08  8kbit/1kbyte EEprom
+#define ESTL_STORAGE_I2CEEPROM_24LC16           (4)     //!< 24LC16 16kbit/2kbyte EEprom
+#define ESTL_STORAGE_I2CEEPROM_24LC32           (5)     //!< 24LC32 32kbit/4kbyte EEprom
 /** @} */
 
 
@@ -75,9 +76,9 @@
  * @brief Enumerate different GLCD hardware variants
  * @{
  */
-#define ESTL_GLCD_HARDWARE_KS0108                (1)     //!< Define KS0108 graphic LCD hardware
-#define ESTL_GLCD_HARDWARE_S1D15605              (2)     //!< Define S1D15605 graphic LCD hardware
-#define ESTL_GLCD_HARDWARE_DOGX128               (3)     //!< Define DOGx128 graphic LCD hardware
+#define ESTL_GLCD_HARDWARE_KS0108               (1)     //!< Define KS0108 graphic LCD hardware
+#define ESTL_GLCD_HARDWARE_S1D15605             (2)     //!< Define S1D15605 graphic LCD hardware
+#define ESTL_GLCD_HARDWARE_DOGX128              (3)     //!< Define DOGx128 graphic LCD hardware
 /** @} */
 
 
@@ -86,8 +87,8 @@
  * @brief Several variants of how a help text should be treated
  * @{
  */
-#define HELP_TEXT_DEFAULT(a)    (a)     //!< Insert the provided help text
-#define HELP_TEXT_HIDDEN(a)     ("")    //!< Replace the help text with empty string
+#define HELP_TEXT_DEFAULT(a)                    (a)     //!< Insert the provided help text
+#define HELP_TEXT_HIDDEN(a)                     ("")    //!< Replace the help text with empty string
 /** @} */
 
 
@@ -96,9 +97,9 @@
  * @brief Terminal's line break options
  * @{
  */
-#define ESTL_TERMINAL_LINE_BREAK_LF     (1)     //!<  Line feed
-#define ESTL_TERMINAL_LINE_BREAK_CR     (2)     //!<  Carriage return
-#define ESTL_TERMINAL_LINE_BREAK_CRLF   (3)     //!<  Carriage return and line feed
+#define ESTL_TERMINAL_LINE_BREAK_LF             (1)     //!<  Line feed
+#define ESTL_TERMINAL_LINE_BREAK_CR             (2)     //!<  Carriage return
+#define ESTL_TERMINAL_LINE_BREAK_CRLF           (3)     //!<  Carriage return and line feed
 /** @} */
 
 
