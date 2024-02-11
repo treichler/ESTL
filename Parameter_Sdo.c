@@ -184,17 +184,6 @@ error_code_t ParameterSdo_ReadTableEntry( uint8_t node_id, int16_t parameter_ind
 }
 
 
-// Return values for CANopen_CallbackSdoReq() callback
-/**
- * @name Return values for CANopen_CallbackSdoReq() callback
- * @{
- */
-#define CAN_SDOREQ_NOTHANDLED     (0)   //!<  Process regularly, no impact
-#define CAN_SDOREQ_HANDLED_SEND   (1)   //!<  Processed in callback, auto-send returned msg
-#define CAN_SDOREQ_HANDLED_NOSEND (2)   //!<  Processed in callback, don't send response
-/** @} */
-
-
 void ParameterSdo_MsgSetVal( uint8_t * msg, uint32_t value )
 {
   msg[4] = value;
@@ -215,11 +204,11 @@ uint8_t ParameterSdo_CallbackSdoReq( uint8_t length_req, uint8_t *req_ptr, uint8
     uint16_t i;
     uint16_t index = req_ptr[1] | (req_ptr[2] << 8);
     int16_t  parameter_index = (int16_t)( ((index - 0x2000) << 2) | (req_ptr[3] >> 6) );
-    uint8_t  parameter_sub_index = req_ptr[3] &= 0x0F;
+    uint8_t  parameter_sub_index = req_ptr[3] & 0x0F;
 
-    resp_ptr[1] = req_ptr[1];
-    resp_ptr[2] = req_ptr[2];
-    resp_ptr[3] = req_ptr[3];
+    resp_ptr[1] = req_ptr[1];  // Index
+    resp_ptr[2] = req_ptr[2];  // Index
+    resp_ptr[3] = req_ptr[3];  // Sub Index
 
     if( (req_ptr[0] & 0xE0) == 0x40 ) // expedited or segmented read
     {
@@ -394,7 +383,7 @@ uint8_t ParameterSdo_CallbackSdoReq( uint8_t length_req, uint8_t *req_ptr, uint8
         *data++ = read_buffer[read_ofs++];
         i--;
       }
-      resp_ptr[0] = (req_ptr[0] & 0x10) | ((7-i) < 1);
+      resp_ptr[0] = (req_ptr[0] & 0x10) | (i << 1);
       if( read_ofs == buffer_len ) // The whole buffer is read:
       {
         // this is the last segment

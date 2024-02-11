@@ -142,6 +142,16 @@ error_code_t ParameterSdo_ReadTableEntry( uint8_t node_id, int16_t parameter_ind
 
 
 /**
+ * @name Return values for CANopen_CallbackSdoReq() callback
+ * @{
+ */
+#define CAN_SDOREQ_NOTHANDLED     (0)   //!<  Process regularly, no impact
+#define CAN_SDOREQ_HANDLED_SEND   (1)   //!<  Processed in callback, auto-send returned msg
+#define CAN_SDOREQ_HANDLED_NOSEND (2)   //!<  Processed in callback, don't send response
+/** @} */
+
+
+/**
  * This callback maps the parameter-set to the SDO index range 0x2000..0x5FFF.
  * This function needs to be called if any other SDO request for this
  * particular node cannot be handled.
