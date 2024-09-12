@@ -86,7 +86,7 @@ extern int32_t StorageFlash_Read( storage_id_t index, void *data, int16_t size )
  *   @retval  STORAGE_ENUM_MISMATCH  Storage_table does not fit to data-block enumeration
  *   @retval  STORAGE_SIZE_MISMATCH  Requested data-block sizes do not fit into non-volatile memory
  */
-inline error_code_t Storage_Init(void)
+static inline error_code_t Storage_Init(void)
 {
 #if( ESTL_STORAGE_HARDWARE == ESTL_STORAGE_HARDWARE_FAKE_NV_MEMORY )
   return StorageEeprom_Init();
@@ -108,7 +108,7 @@ inline error_code_t Storage_Init(void)
  * @return                           Error code depending on write success.
  *   @retval  OK                     On success.
  */
-inline error_code_t Storage_Write(storage_id_t index, void *data, int16_t size)
+static inline error_code_t Storage_Write(storage_id_t index, void *data, int16_t size)
 {
 #if( ESTL_STORAGE_HARDWARE == ESTL_STORAGE_HARDWARE_FAKE_NV_MEMORY )
   return StorageEeprom_Write( index, data, size );
@@ -128,7 +128,7 @@ inline error_code_t Storage_Write(storage_id_t index, void *data, int16_t size)
  * @return                           Zero and positive values represent the read data size,
  *                                   negative values represent the error code on read fail.
  */
-inline int32_t Storage_Read(storage_id_t index, void *data, int16_t size)
+static inline int32_t Storage_Read(storage_id_t index, void *data, int16_t size)
 {
 #if( ESTL_STORAGE_HARDWARE == ESTL_STORAGE_HARDWARE_FAKE_NV_MEMORY )
   return StorageEeprom_Read( index, data, size );
