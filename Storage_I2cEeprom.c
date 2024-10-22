@@ -36,7 +36,12 @@
 #include "Target.h"
 #include "Storage_I2cEeprom.h"
 
-#if( ESTL_STORAGE_I2CEEPROM == ESTL_STORAGE_I2CEEPROM_24LC32 )
+#if( ESTL_STORAGE_I2CEEPROM == ESTL_STORAGE_I2CEEPROM_24LC64 )
+  // 24LC64 -- 8 kbyte
+  #define EEPROM_SIZE                     (8192)
+  #define EEPROM_PAGE_SIZE                (32)
+  #define EEPROM_NR_OF_ADDR_BYTES         (2)
+#elif( ESTL_STORAGE_I2CEEPROM == ESTL_STORAGE_I2CEEPROM_24LC32 )
   // 24LC32 -- 4 kbyte
   #define EEPROM_SIZE                     (4096)
   #define EEPROM_PAGE_SIZE                (32)

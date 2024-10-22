@@ -68,6 +68,7 @@
 #define ESTL_STORAGE_I2CEEPROM_24LC08           (3)     //!< 24LC08  8kbit/1kbyte EEprom
 #define ESTL_STORAGE_I2CEEPROM_24LC16           (4)     //!< 24LC16 16kbit/2kbyte EEprom
 #define ESTL_STORAGE_I2CEEPROM_24LC32           (5)     //!< 24LC32 32kbit/4kbyte EEprom
+#define ESTL_STORAGE_I2CEEPROM_24LC64           (6)     //!< 24LC64 64kbit/8kbyte EEprom
 /** @} */
 
 
