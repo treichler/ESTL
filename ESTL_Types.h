@@ -43,8 +43,8 @@
  * Define the boolean data-type
  */
 typedef enum {
-  FALSE = 0,
-  TRUE  = 1,
+  FALSE = 0,    //!< Boolean false value.
+  TRUE  = 1,    //!< Boolean true value.
 } bool_t;
 
 

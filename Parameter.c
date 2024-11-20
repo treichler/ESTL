@@ -138,12 +138,6 @@
 
 
 //-------------------------------------------------------------------------------------------------
-//  Local prototypes
-//-------------------------------------------------------------------------------------------------
-error_code_t Parameter_LoadDefaultData(void);
-
-
-//-------------------------------------------------------------------------------------------------
 //  parameter related service functions
 //-------------------------------------------------------------------------------------------------
 
@@ -184,12 +178,11 @@ error_code_t Parameter_LoadDefaultData(void);
  * Parameter module's local data structure, containing static variables.
  */
 struct {
-  error_code_t  init_error;                             //!<  Parameter initialization error code
-  bool_t        show_table_crc;                         //!<  Show table CRC on sys-cmd reading
-  int8_t        access_level;                           //!<  Currently activated parameter access level
-  uint32_t      access_secret;                          //!<  Current access level's secret key
-  uint32_t      table_crc;                              //!<  Checksum over the whole parameter table
-  void          (* serialNumberCallback)(uint32_t);     //!<  Pointer to serial-number-callback function
+  error_code_t  init_error;                                         //!<  Parameter initialization error code
+  int8_t        access_level;                                       //!<  Currently activated parameter access level
+  uint32_t      access_secret;                                      //!<  Current access level's secret key
+  uint32_t      table_crc;                                          //!<  Checksum over the whole parameter table
+  error_code_t  (* serialNumberParFctn)(function_call_t,int32_t*);  //!<  Pointer to serial-number-callback function
 } Parameter_Data;
 
 /**
@@ -296,7 +289,7 @@ error_code_t Parameter_SysInfoFunction(function_call_t parameter_function, int32
                                  "2: Initialize parameter\n"         \
                                  "3: Load default parameter\n"       \
                                  "4: Parameter init status\n"        \
-                                 "5: Show table CRC on next read")
+                                 "Read-back value represents table CRC")
 
 /**
  * This function is related to the system parameter "sys-cmd".
@@ -323,58 +316,49 @@ error_code_t Parameter_SysCmdFunction(function_call_t parameter_function, int32_
         error_code = Parameter_Save();
         break;
       case 2:
-        error_code = Parameter_Init();
+        error_code = Parameter_Init( TRUE );
         break;
       case 3:
         if( Parameter_Data.access_level >= (LEVEL_3 & LEVEL_MASK) )
-          error_code = Parameter_LoadDefaultData();
+          error_code = Parameter_Init( FALSE );
         else
           error_code = PARAMETER_ACCESS_DENIED;
         break;
       case 4:
         error_code = Parameter_Data.init_error;
         break;
-      case 5:
-        Parameter_Data.show_table_crc = TRUE;
-        break;
       default:
-        Parameter_Data.show_table_crc = FALSE;
         error_code = VALUE_INVALID;
         break;
     }
   }
   else if( parameter_function == FUNCTION_READ )
-  {
-    if( Parameter_Data.show_table_crc )
-      *value = Parameter_Data.table_crc;
-    else
-      *value = 0;
-  }
+    *value = Parameter_Data.table_crc;
+
   return error_code;
 }
 
 
 /**
  * Serial-number function related to system parameter "SN"
- * In case of parameter init respectively parameter write and if there is a
- * serial-number-callback-function initialized, this function is called with
- * the current serial number.
+ * If there is a serial-number callback-function initialized, parameter-call is
+ * forwarded to this function.
  *
  * @param     parameter_function     How is this function called.
  * @param     value                  Pointer to related value in parameter array
- * @return                           Error code, always returns OK
+ * @return                           Error code, depending on callback
  */
 error_code_t Parameter_SerialNumberFunction(function_call_t parameter_function, int32_t * value)
 {
-  if( (NULL != Parameter_Data.serialNumberCallback) && ((FUNCTION_INIT == parameter_function) || (FUNCTION_WRITE == parameter_function)) )
-    Parameter_Data.serialNumberCallback( (uint32_t)(*value) );
+  if( NULL != Parameter_Data.serialNumberParFctn )
+    return Parameter_Data.serialNumberParFctn( parameter_function, value );
   return OK;
 }
 
 
-void Parameter_SetSerialNumberCallback( void (* serialNumberCallback)(uint32_t) )
+void Parameter_SetSerialNumberCallback( error_code_t (* serialNumberParFctn)(function_call_t,int32_t*) )
 {
-  Parameter_Data.serialNumberCallback = serialNumberCallback;
+  Parameter_Data.serialNumberParFctn = serialNumberParFctn;
 }
 
 
@@ -387,10 +371,10 @@ void Parameter_SetSerialNumberCallback( void (* serialNumberCallback)(uint32_t) 
  */
 const parameter_table_entry_t System_Parameter_table[] = {
   //                           name         unit            representation       control flags           minimum     nominal         maximum                 function pointer   information/help
-  [ESTL_PARAM_SN]          = {"SN",         UNIT_NONE,         REPR_HEX_08,  LEVEL_3|R_W|NVMEM,        INT32_MIN,          0,      INT32_MAX, &Parameter_SerialNumberFunction,  HELP_TEXT("Serial number")},
   [ESTL_PARAM_SYS_INFO]    = {"sys-info",   UNIT_NONE,            REPR_HEX,  LEVEL_0|R_O|NVMEM,        INT32_MIN, PAR_REV_NR,      INT32_MAX,      &Parameter_SysInfoFunction,  SERVICE_HELP_STR},
   [ESTL_PARAM_SYS_KEY]     = {"sys-key",    UNIT_NONE,            REPR_DEC,  LEVEL_0|R_W|NVMEM,        INT32_MIN,          0,      INT32_MAX,       &Parameter_SysKeyFunction,  HELP_TEXT("Parameter access key. The current value represents the access level.")},
   [ESTL_PARAM_SYS_CMD]     = {"sys-cmd",    UNIT_NONE,            REPR_HEX,  LEVEL_0|R_W,              INT32_MIN,          0,      INT32_MAX,       &Parameter_SysCmdFunction,  HELP_TEXT(SYSTEM_CMD_HELP_STR)},
+  [ESTL_PARAM_SN]          = {"SN",         UNIT_NONE,         REPR_HEX_08,  LEVEL_3|R_W|NVMEM|PERS,   INT32_MIN,          0,      INT32_MAX, &Parameter_SerialNumberFunction,  HELP_TEXT("Serial number")},
 #ifdef ESTL_ENABLE_RF
   // radio frequency
   [ESTL_PARAM_RF_FREQ]     = {"RF-freq",    UNIT_MEG_HERTZ,     REPR_Q15_4,  LEVEL_1|R_W|NVMEM,       Q15(863.0), Q15(868.0),     Q15(870.0),    &RfApp_FreqParameterFunction,  HELP_TEXT("Transmitter frequency.")},
@@ -681,48 +665,48 @@ uint16_t Parameter_NvEntryCrc(const parameter_table_entry_t * parameter_table_en
 }
 
 
-/**
- * Load the parameter image from non-volatile memory.
- * Only on return value OK or PARAMETER_REV_MINOR_CHANGE the parameters are successfully loaded.
- *
- * @return                                Error code depending on consistency
- *                                        and compatibility of non-volatile data.
- *   @retval  OK                          On success.
- *   @retval  PARAMETER_REV_MINOR_CHANGE  Minor change in parameter revision.
- *   @retval  PARAMETER_REV_MAJOR_CHANGE  Major change in parameter revision.
- *   @retval  PARAMETER_ENUM_MISMATCH     Something is wrong in application's parameter table.
- *   @retval  PARAMETER_CONTENT_CHANGE
- *   @retval  STORAGE_NOT_INITIALIZED
- *   @retval  STORAGE_ENUM_MISMATCH
- *   @retval  STORAGE_INDEX_MISMATCH
- *   @retval  STORAGE_SIZE_MISMATCH
- *   @retval  STORAGE_CRC_MISMATCH
- *   @retval  INDEX_OUT_OF_BOUNDARY       Accessed storage does not exist.
- */
-error_code_t Parameter_LoadNvData(void)
+error_code_t Parameter_Init( bool_t load_nv_data )
 {
+  int16_t i;
+  error_code_t table_crc_status = OK;
+  const parameter_table_entry_t * parameter_table_entry = 0;
+
+  // calculate parameter table CRC for identification
+  Parameter_Data.table_crc = 0;
+  for( i = -(int16_t)SYSTEM_PARAMETER_TABLE_NR_OF_ENTRIES; i < NR_OF_PARAMETER_TABLE_ENTRIES; i++ )
+  {
+    table_crc_status = Parameter_GetEntry(&parameter_table_entry, i);
+    if( OK != table_crc_status )
+      break;
+    Parameter_Data.table_crc = Parameter_TableEntryCrc(parameter_table_entry, Parameter_Data.table_crc);
+  }
+
 #ifdef ESTL_ENABLE_STORAGE
   nv_parameter_entry_t nv_parameter_entry[SYSTEM_PARAMETER_TABLE_NR_OF_ENTRIES + NR_OF_PARAMETER_TABLE_ENTRIES];
-  const parameter_table_entry_t * parameter_table_entry = 0;
   int32_t value, storage_size, number_of_nv_entries;
-  int16_t i;
   uint16_t nvmem_index = 0;
+  error_code_t nv_data_status = OK;
   error_code_t init_status = OK;
   bool_t is_content_changed = FALSE;
 
   // load and check data from non volatile memory
   storage_size = Storage_Read(STORAGE_PARAMETER_IMAGE, nv_parameter_entry, sizeof(nv_parameter_entry));
   if( storage_size < 0 )
-    return (error_code_t)storage_size;
+    nv_data_status = (error_code_t)storage_size;
   number_of_nv_entries = storage_size / sizeof(nv_parameter_entry_t);
 
   // copy values to parameter array
   for( i = -(int16_t)SYSTEM_PARAMETER_TABLE_NR_OF_ENTRIES; i < NR_OF_PARAMETER_TABLE_ENTRIES; i++ )
   {
-    Parameter_GetEntry(&parameter_table_entry, i);
+    error_code_t error;
+    error = Parameter_GetEntry(&parameter_table_entry, i);
+    if( OK != error )
+      return error; // fatal error in application's parameter table
 
     // check if parameter entry needs to be loaded with non-volatile memory data
-    if( parameter_table_entry->flags & NVMEM )
+    if( (OK == nv_data_status) &&
+        (parameter_table_entry->flags & NVMEM) &&
+        (load_nv_data || (parameter_table_entry->flags & PERS)) )
     {
       // increase nvmem_index just in case if there is non-volatile data from another minor parameter revision
       while( (i > nv_parameter_entry[nvmem_index].index) && (nvmem_index < number_of_nv_entries) )
@@ -731,16 +715,21 @@ error_code_t Parameter_LoadNvData(void)
         is_content_changed = TRUE;
       }
 
-      if( (nv_parameter_entry[nvmem_index].index == i) && (nvmem_index < number_of_nv_entries) )
+      if( (nv_parameter_entry[nvmem_index].index == i) && (nvmem_index < number_of_nv_entries) &&
+          (nv_parameter_entry[nvmem_index].crc == Parameter_NvEntryCrc(parameter_table_entry)) )
       {
-        // non-volatile entry found, load its value
+        // non-volatile entry found and valid, load its value
         value = nv_parameter_entry[nvmem_index].value;
-        // TODO eventually check value's limits, correct it or abort with error?
         nvmem_index ++;
+        // limit value for forward/backward compatibility reasons
+        if( parameter_table_entry->maximum < value )
+          value = parameter_table_entry->maximum;
+        if( parameter_table_entry->minimum > value )
+          value = parameter_table_entry->minimum;
       }
       else
       {
-        // non-volatile entry not found, load nominal value
+        // non-volatile entry not found or invalid, load nominal value
         value = parameter_table_entry->nominal;
         is_content_changed = TRUE;
       }
@@ -761,7 +750,7 @@ error_code_t Parameter_LoadNvData(void)
 
       // abort if parameter function call fails
       if( error == PARAMETER_REV_MAJOR_CHANGE )
-        return error;
+        nv_data_status = error;
       else if( error == PARAMETER_REV_MINOR_CHANGE )
         init_status = error;
 /*
@@ -772,78 +761,21 @@ error_code_t Parameter_LoadNvData(void)
         init_status = error;
       }
 */
-/*
-      // TODO in case of IMAGE_REV_MAJOR_CHANGE call save() to store default values to nv-memory
-      if (init_status == PARAMETER_REV_MAJOR_CHANGE)
-      {
-        // TODO save, or not...
-        Parameter_data.init_status = init_status;
-        return init_status;
-      }
-      if (init_status == PARAMETER_REV_MINOR_CHANGE)
-        Parameter_data.init_status = init_status;
-*/
     }
   }
 
-//  Parameter_data.init_status = init_status;
-//  return Parameter_data.init_status;
-  if( is_content_changed && (OK == init_status) )
-    return PARAMETER_CONTENT_CHANGE;
-  return init_status;
+  if( OK != nv_data_status )
+    Parameter_Data.init_error = nv_data_status;
+  else if( is_content_changed && (OK == init_status) )
+    Parameter_Data.init_error = PARAMETER_CONTENT_CHANGE;
+  else
+    Parameter_Data.init_error = init_status;
 #else
-  return PARAMETER_STORAGE_MISSING;
+  if( OK != table_crc_status )
+    Parameter_Data.init_error = table_crc_status;
+  else
+    Parameter_Data.init_error = PARAMETER_STORAGE_MISSING;
 #endif
-}
-
-
-/**
- * Load default parameter values.
- *
- * @return                             Error code.
- *   @retval  OK                       On success.
- *   @retval  PARAMETER_ENUM_MISMATCH  Something is wrong in application's parameter table.
- */
-error_code_t Parameter_LoadDefaultData(void)
-{
-  int16_t i;
-  error_code_t error = OK;
-  const parameter_table_entry_t * parameter_table_entry = 0;
-  for (i = -(int16_t)SYSTEM_PARAMETER_TABLE_NR_OF_ENTRIES; i < NR_OF_PARAMETER_TABLE_ENTRIES; i++)
-  {
-    error = Parameter_GetEntry(&parameter_table_entry, i);
-    if( OK != error )
-      return error;
-    Parameter_array[SYSTEM_PARAMETER_TABLE_NR_OF_ENTRIES + i] = parameter_table_entry->nominal;
-    if (parameter_table_entry->parameterFunction != 0)
-      parameter_table_entry->parameterFunction( FUNCTION_INIT, &(Parameter_array[SYSTEM_PARAMETER_TABLE_NR_OF_ENTRIES + i]) );
-  }
-  return error;
-}
-
-
-error_code_t Parameter_Init(void)
-{
-  int16_t i;
-  const parameter_table_entry_t * parameter_table_entry = 0;
-
-  // calculate parameter table CRC for identification
-  Parameter_Data.table_crc = 0;
-  for( i = -(int16_t)SYSTEM_PARAMETER_TABLE_NR_OF_ENTRIES; i < NR_OF_PARAMETER_TABLE_ENTRIES; i++ )
-  {
-    Parameter_GetEntry(&parameter_table_entry, i);
-    Parameter_Data.table_crc = Parameter_TableEntryCrc(parameter_table_entry, Parameter_Data.table_crc);
-  }
-
-  // try to initialize parameters with non-volatile memory data
-  Parameter_Data.init_error = Parameter_LoadNvData();
-  if( (OK == Parameter_Data.init_error) ||
-      (PARAMETER_CONTENT_CHANGE == Parameter_Data.init_error) ||
-      (PARAMETER_REV_MINOR_CHANGE == Parameter_Data.init_error) )
-    return Parameter_Data.init_error;
-
-  // loading non-volatile memory failed so initialize parameters with default values
-  Parameter_LoadDefaultData();
   return Parameter_Data.init_error;
 }
 

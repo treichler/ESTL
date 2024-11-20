@@ -24,7 +24,7 @@
 /**
  * @ingroup PARAMETER
  * @defgroup PARAMETER_TABLE  Parameter Table
- * @brief Parameter table and indices
+ * @brief Application specific Parameter table and indices
  *
  * This module holds the application specific parameter table and its
  * related indices, which need to be implemented in Parameter_Table.c

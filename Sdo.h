@@ -123,7 +123,7 @@ bool_t Sdo_Init( uint8_t * req_data, bool_t (* SdoRequestFunction)(uint8_t), boo
 
 
 /**
- * SDO's real-time task needs to be called periodically every millisecond.
+ * SDO's real-time task needs to be called periodically every millisecond
  * to handle request timeouts.
  */
 void Sdo_1msTask(void);
