@@ -46,6 +46,8 @@
 #define NR_OF_CHANNEL_LEARNING_SAMPLES  (16)
 
 
+#if( defined(ESTL_ENABLE_TERMINAL_REMOTE_PARAMETER) )
+
 struct {
   scope_pdo_sample_t    sample_buffer[SCOPE_PDO_NR_OF_BUFFER_ENTRIES];
   bool_t                (* PrintFunction)(scope_pdo_sample_t*);         //!<  PDO Scope data print function
@@ -53,8 +55,6 @@ struct {
   bool_t                sample_is_complete;
 } ScopePdo_data;
 
-
-#if( defined(ESTL_ENABLE_TERMINAL_REMOTE_PARAMETER) )
 
 void ScopePdo_Init( bool_t (* PrintFunction)(scope_pdo_sample_t*) )
 {

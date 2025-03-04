@@ -277,19 +277,22 @@ void Print_Printf(const char *fmt, ...)
 
 
 static void putcp(void* p, char c, int *cnt)
-    {
-    *(*((char**)p))++ = c;
-    }
+{
+  *(*((char**)p))++ = c;
+  (*cnt) ++;
+}
 
 
-void Print_Sprintf(char* s,const char *fmt, ...)
-    {
-    va_list va;
-    va_start(va, fmt);
-    Print_Format(&s, putcp, NULL, fmt, va);
-    putcp(&s, '\0', NULL);
-    va_end(va);
-    }
+int Print_Sprintf(char* s,const char *fmt, ...)
+{
+  int cnt = 0;
+  va_list va;
+  va_start(va, fmt);
+  Print_Format(&s, putcp, &cnt, fmt, va);
+  putcp(&s, '\0', &cnt);
+  va_end(va);
+  return cnt - 1;
+}
 
 
 static void putncp(void* p, char c, int *cnt)

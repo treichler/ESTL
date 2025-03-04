@@ -138,8 +138,9 @@ void Print_Printf(const char *fmt, ...);
  * @param[out] s    Buffer where the output is printed to.
  * @param[in]  fmt  A string containing optional format specifiers.
  * @param[in]  ...  Additional arguments, which values are used to replace format specifiers.
+ * return           The amount of character to be written.
  */
-void Print_Sprintf(char* s, const char *fmt, ...);
+int Print_Sprintf(char* s, const char *fmt, ...);
 
 
 /**
