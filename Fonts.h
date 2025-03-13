@@ -44,14 +44,12 @@
 extern const font_t font_5x8_mono;
 
 extern const font_t font_5x8;
-/*
-extern const font_t DejaVu_Sans_Mono13x22;
 
-extern const font_t font_14x24;
-*/
 extern const font_t font_10x14;
 
 extern const font_t font_14x22;
+
+extern const font_t font_19x32;
 
 
 /**
