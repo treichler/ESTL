@@ -179,6 +179,8 @@
  */
 struct {
   error_code_t  init_error;                                         //!<  Parameter initialization error code
+  error_code_t  task_error;                                         //!<  Parameter idle-task error code
+  bool_t        save_image;                                         //!<  Flag to save image in storage (non-volatile)
   int8_t        access_level;                                       //!<  Currently activated parameter access level
   uint32_t      access_secret;                                      //!<  Current access level's secret key
   uint32_t      table_crc;                                          //!<  Checksum over the whole parameter table
@@ -289,6 +291,7 @@ error_code_t Parameter_SysInfoFunction(function_call_t parameter_function, int32
                                  "2: Initialize parameter\n"         \
                                  "3: Load default parameter\n"       \
                                  "4: Parameter init status\n"        \
+                                 "5: Parameter task status\n"        \
                                  "Read-back value represents table CRC")
 
 /**
@@ -298,6 +301,7 @@ error_code_t Parameter_SysInfoFunction(function_call_t parameter_function, int32
  *   - 2: Initialize parameter, respectively load from non-volatile memory
  *   - 3: Load default/nominal parameter values. Requires at least production access level
  *   - 4: Return error code of parameter initialization status
+ *   - 4: Return error code of parameter idle task
  * On PARAMETER_READ the parameter table's checksum is returned via value.
  *
  * @param     parameter_function     How is this function called.
@@ -326,6 +330,9 @@ error_code_t Parameter_SysCmdFunction(function_call_t parameter_function, int32_
         break;
       case 4:
         error_code = Parameter_Data.init_error;
+        break;
+      case 5:
+        error_code = Parameter_Data.task_error;
         break;
       default:
         error_code = VALUE_INVALID;
@@ -507,6 +514,9 @@ bool_t Parameter_IsWritable(int16_t parameter_index)
 
 error_code_t Parameter_WriteValue(int16_t parameter_index, int32_t value)
 {
+  if( Parameter_Data.save_image)
+    return RESOURCE_BUSY;
+
   const parameter_table_entry_t * parameter_table_entry = 0;
   int32_t old_value;
   error_code_t error;
@@ -783,30 +793,50 @@ error_code_t Parameter_Init( bool_t load_nv_data )
 error_code_t Parameter_Save(void)
 {
 #ifdef ESTL_ENABLE_STORAGE
-  nv_parameter_entry_t nv_parameter_entry[SYSTEM_PARAMETER_TABLE_NR_OF_ENTRIES + NR_OF_PARAMETER_TABLE_ENTRIES];
-  const parameter_table_entry_t * parameter_table_entry = 0;
-  int16_t i;
-  uint16_t nvmem_index = 0;
-  error_code_t error;
-
-  for( i = -(int16_t)SYSTEM_PARAMETER_TABLE_NR_OF_ENTRIES; i < NR_OF_PARAMETER_TABLE_ENTRIES; i++ )
-  {
-    error = Parameter_GetEntry(&parameter_table_entry, i);
-    if( OK != error )
-      return error;
-    // copy data from parameter table to nv-memory structure
-    if( parameter_table_entry->flags & NVMEM )
-    {
-      if( parameter_table_entry->parameterFunction )
-        parameter_table_entry->parameterFunction( FUNCTION_SAVE, &(Parameter_array[SYSTEM_PARAMETER_TABLE_NR_OF_ENTRIES + i]) );
-      nv_parameter_entry[nvmem_index].value = Parameter_array[SYSTEM_PARAMETER_TABLE_NR_OF_ENTRIES + i];
-      nv_parameter_entry[nvmem_index].index = i;
-      nv_parameter_entry[nvmem_index].crc   = Parameter_NvEntryCrc( parameter_table_entry );
-      nvmem_index ++;
-    }
-  }
-  return Storage_Write( STORAGE_PARAMETER_IMAGE, (uint8_t*)nv_parameter_entry, nvmem_index * sizeof(nv_parameter_entry_t) );
+  if( Parameter_Data.save_image )
+    return RESOURCE_BUSY;
+  Parameter_Data.save_image = TRUE;
+  return OK;
 #else
   return OK;
+#endif
+}
+
+
+void Parameter_Task( void )
+{
+#ifdef ESTL_ENABLE_STORAGE
+  if( Parameter_Data.save_image )
+  {
+    nv_parameter_entry_t nv_parameter_entry[SYSTEM_PARAMETER_TABLE_NR_OF_ENTRIES + NR_OF_PARAMETER_TABLE_ENTRIES];
+    const parameter_table_entry_t * parameter_table_entry = 0;
+    int16_t i;
+    uint16_t nvmem_index = 0;
+    error_code_t error;
+
+    for( i = -(int16_t)SYSTEM_PARAMETER_TABLE_NR_OF_ENTRIES; i < NR_OF_PARAMETER_TABLE_ENTRIES; i++ )
+    {
+      error = Parameter_GetEntry(&parameter_table_entry, i);
+      if( OK != error )
+      {
+        Parameter_Data.task_error = error;
+        return;
+      }
+
+      // copy data from parameter table to nv-memory structure
+      if( parameter_table_entry->flags & NVMEM )
+      {
+        if( parameter_table_entry->parameterFunction )
+          parameter_table_entry->parameterFunction( FUNCTION_SAVE, &(Parameter_array[SYSTEM_PARAMETER_TABLE_NR_OF_ENTRIES + i]) );
+        nv_parameter_entry[nvmem_index].value = Parameter_array[SYSTEM_PARAMETER_TABLE_NR_OF_ENTRIES + i];
+        nv_parameter_entry[nvmem_index].index = i;
+        nv_parameter_entry[nvmem_index].crc   = Parameter_NvEntryCrc( parameter_table_entry );
+        nvmem_index ++;
+      }
+    }
+    Parameter_Data.save_image = FALSE;
+    Parameter_Data.task_error = Storage_Write( STORAGE_PARAMETER_IMAGE, (uint8_t*)nv_parameter_entry, nvmem_index * sizeof(nv_parameter_entry_t) );
+    Parameter_Data.save_image = FALSE;
+  }
 #endif
 }

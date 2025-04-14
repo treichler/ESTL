@@ -395,6 +395,13 @@ error_code_t Parameter_Save(void);
 
 
 /**
+ * Parameter task controls the Parameter-image storage, therefore it needs to be called
+ * within a time non-critical idle loop.
+ */
+void Parameter_Task( void );
+
+
+/**
  * @} end of PARAMETER
  */
 
