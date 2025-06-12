@@ -80,6 +80,12 @@ const char * Unit_GetString(unit_t unit)
     [UNIT_M_METRE_PER_SECOND]   = "mm/s",
     [UNIT_METRE_PER_SECOND]     = "m/s",
     [UNIT_K_METRE_PER_HOUR]     = "km/h",
+    [UNIT_VOLT_AMPERE]          = "VA",
+    [UNIT_K_VOLT_AMPERE]        = "kVA",
+    [UNIT_VAR]                  = "var",
+    [UNIT_K_VAR]                = "kvar",
+    [UNIT_VAR_HOUR]             = "varh",
+    [UNIT_K_VAR_HOUR]           = "kvarh",
   };
   if( (unit >= NR_OF_UNITS) || (NULL == unit_str[unit]) )
     unit = UNIT_NONE;

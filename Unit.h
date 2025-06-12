@@ -86,6 +86,12 @@ typedef enum {
   UNIT_M_METRE_PER_SECOND,      //!<  Speed
   UNIT_METRE_PER_SECOND,
   UNIT_K_METRE_PER_HOUR,
+  UNIT_VOLT_AMPERE,             //!<  Apparent Power
+  UNIT_K_VOLT_AMPERE,
+  UNIT_VAR,                     //!<  Reactive Power
+  UNIT_K_VAR,
+  UNIT_VAR_HOUR,                //!<  Reactive Energy
+  UNIT_K_VAR_HOUR,
   NR_OF_UNITS
 } unit_t;
 
