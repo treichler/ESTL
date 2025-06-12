@@ -626,7 +626,7 @@ void StorageFlash_PrepareAffectedPages( uint16_t size )
 /**
  * See Storage_Write() for further information.
  */
-error_code_t StorageFlash_Write( storage_id_t storage_id, void *data, int16_t size )
+error_code_t StorageFlash_Write( storage_id_t storage_id, const void *data, int16_t size )
 {
   storage_header_t header;
   uint32_t crc;

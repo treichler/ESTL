@@ -46,6 +46,41 @@
  * @{
  */
 
+#if( ESTL_STORAGE_I2CEEPROM == ESTL_STORAGE_I2CEEPROM_24LC64 )
+  // 24LC64 -- 8 kbyte
+  #define I2C_EEPROM_SIZE                       (8192)
+  #define I2C_EEPROM_PAGE_SIZE                  (32)
+  #define I2C_EEPROM_NR_OF_ADDR_BYTES           (2)
+#elif( ESTL_STORAGE_I2CEEPROM == ESTL_STORAGE_I2CEEPROM_24LC32 )
+  // 24LC32 -- 4 kbyte
+  #define I2C_EEPROM_SIZE                       (4096)
+  #define I2C_EEPROM_PAGE_SIZE                  (32)
+  #define I2C_EEPROM_NR_OF_ADDR_BYTES           (2)
+#elif( ESTL_STORAGE_I2CEEPROM == ESTL_STORAGE_I2CEEPROM_24LC16 )
+  // 24LC16 -- 2 kbyte
+  #define I2C_EEPROM_SIZE                       (2048)
+  #define I2C_EEPROM_PAGE_SIZE                  (16)
+  #define I2C_EEPROM_NR_OF_ADDR_BYTES           (1)
+#elif( ESTL_STORAGE_I2CEEPROM == ESTL_STORAGE_I2CEEPROM_24LC08 )
+  // 24LC08 -- 1 kbyte
+  #error "EEprom needs to be tested. If successful this error can be deleted"
+  #define I2C_EEPROM_SIZE                       (1024)
+  #define I2C_EEPROM_PAGE_SIZE                  (16)
+  #define I2C_EEPROM_NR_OF_ADDR_BYTES           (1)
+#elif( ESTL_STORAGE_I2CEEPROM == ESTL_STORAGE_I2CEEPROM_24LC04 )
+  // 24LC04 -- 512 byte
+  #define I2C_EEPROM_SIZE                       (512)
+  #define I2C_EEPROM_PAGE_SIZE                  (16)
+  #define I2C_EEPROM_NR_OF_ADDR_BYTES           (1)
+#elif( ESTL_STORAGE_I2CEEPROM == ESTL_STORAGE_I2CEEPROM_24LC02 )
+  // 24LC02 -- 256 byte
+  #define I2C_EEPROM_SIZE                       (256)
+  #define I2C_EEPROM_PAGE_SIZE                  (8)
+  #define I2C_EEPROM_NR_OF_ADDR_BYTES           (1)
+#else
+  #error "EEprom is not defined."
+#endif
+
 /**
  * Get the size of the EEprom which is connected to I2C bus
  *
@@ -62,7 +97,7 @@ int32_t StorageI2cEeprom_GetSize(void);
  * @param     size       Size of data.
  * @return               Error code.
  */
-error_code_t StorageI2cEeprom_NvMemWrite(uint16_t addr, uint8_t *data, uint16_t size);
+error_code_t StorageI2cEeprom_NvMemWrite(uint16_t addr, const uint8_t *data, uint16_t size);
 
 
 /**

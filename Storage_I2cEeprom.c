@@ -36,40 +36,6 @@
 #include "Target.h"
 #include "Storage_I2cEeprom.h"
 
-#if( ESTL_STORAGE_I2CEEPROM == ESTL_STORAGE_I2CEEPROM_24LC64 )
-  // 24LC64 -- 8 kbyte
-  #define EEPROM_SIZE                     (8192)
-  #define EEPROM_PAGE_SIZE                (32)
-  #define EEPROM_NR_OF_ADDR_BYTES         (2)
-#elif( ESTL_STORAGE_I2CEEPROM == ESTL_STORAGE_I2CEEPROM_24LC32 )
-  // 24LC32 -- 4 kbyte
-  #define EEPROM_SIZE                     (4096)
-  #define EEPROM_PAGE_SIZE                (32)
-  #define EEPROM_NR_OF_ADDR_BYTES         (2)
-#elif( ESTL_STORAGE_I2CEEPROM == ESTL_STORAGE_I2CEEPROM_24LC16 )
-  // 24LC16 -- 2 kbyte
-  #define EEPROM_SIZE                     (2048)
-  #define EEPROM_PAGE_SIZE                (16)
-  #define EEPROM_NR_OF_ADDR_BYTES         (1)
-#elif( ESTL_STORAGE_I2CEEPROM == ESTL_STORAGE_I2CEEPROM_24LC08 )
-  // 24LC08 -- 1 kbyte
-  #error "EEprom needs to be tested. If successful this error can be deleted"
-  #define EEPROM_SIZE                     (1024)
-  #define EEPROM_PAGE_SIZE                (16)
-  #define EEPROM_NR_OF_ADDR_BYTES         (1)
-#elif( ESTL_STORAGE_I2CEEPROM == ESTL_STORAGE_I2CEEPROM_24LC04 )
-  // 24LC04 -- 512 byte
-  #define EEPROM_SIZE                     (512)
-  #define EEPROM_PAGE_SIZE                (16)
-  #define EEPROM_NR_OF_ADDR_BYTES         (1)
-#elif( ESTL_STORAGE_I2CEEPROM == ESTL_STORAGE_I2CEEPROM_24LC02 )
-  // 24LC02 -- 256 byte
-  #define EEPROM_SIZE                     (256)
-  #define EEPROM_PAGE_SIZE                (8)
-  #define EEPROM_NR_OF_ADDR_BYTES         (1)
-#else
-  #error "EEprom is not defined."
-#endif
 
 #ifdef ESTL_STORAGE_I2CEEPROM_7BIT_ADDR
   #define EEPROM_BUS_WRITE_ADDRESS        (ESTL_STORAGE_I2CEEPROM_7BIT_ADDR << 1)
@@ -90,36 +56,36 @@
  * @{
  */
 #define EEPROM_BUS_READ_ADDRESS         (0x01 | EEPROM_BUS_WRITE_ADDRESS)
-#define EEPROM_PAGE_INDEX_MASK          (EEPROM_PAGE_SIZE - 1)
+#define EEPROM_PAGE_INDEX_MASK          (I2C_EEPROM_PAGE_SIZE - 1)
 #define EEPROM_NR_OF_WRITE_RETRIES      (100)
 /** @} */
 
 
 inline int32_t StorageI2cEeprom_GetSize(void)
 {
-  return EEPROM_SIZE;
+  return I2C_EEPROM_SIZE;
 }
 
 
-error_code_t StorageI2cEeprom_NvMemWrite(uint16_t addr, uint8_t *data, uint16_t size)
+error_code_t StorageI2cEeprom_NvMemWrite(uint16_t addr, const uint8_t *data, uint16_t size)
 {
   uint16_t page_addr, current_max_len, retries;
-  uint8_t tx_buffer[EEPROM_NR_OF_ADDR_BYTES + EEPROM_PAGE_SIZE];
+  uint8_t tx_buffer[I2C_EEPROM_NR_OF_ADDR_BYTES + I2C_EEPROM_PAGE_SIZE];
   error_code_t i2c_write_status;
   uint8_t eeprom_bus_write_address = EEPROM_BUS_WRITE_ADDRESS;
 
-  if((addr + size) > EEPROM_SIZE)
+  if((addr + size) > I2C_EEPROM_SIZE)
     return STORAGE_DATA_TOO_BIG;
 
   page_addr = addr;
   while(size)
   {
     // prepare data
-    current_max_len = EEPROM_PAGE_SIZE - (EEPROM_PAGE_INDEX_MASK & page_addr);
+    current_max_len = I2C_EEPROM_PAGE_SIZE - (EEPROM_PAGE_INDEX_MASK & page_addr);
     if (current_max_len > size)
       current_max_len = size;
     size -= current_max_len;
-    memcpy(&(tx_buffer[EEPROM_NR_OF_ADDR_BYTES]), data, current_max_len);
+    memcpy(&(tx_buffer[I2C_EEPROM_NR_OF_ADDR_BYTES]), data, current_max_len);
     data += current_max_len;
 
     // prepare memory/page address
@@ -131,12 +97,12 @@ error_code_t StorageI2cEeprom_NvMemWrite(uint16_t addr, uint8_t *data, uint16_t 
     eeprom_bus_write_address = EEPROM_BUS_WRITE_ADDRESS | ((page_addr >> 7) & 0x0E);
 #endif
     page_addr &= (~EEPROM_PAGE_INDEX_MASK);
-    page_addr += EEPROM_PAGE_SIZE;
+    page_addr += I2C_EEPROM_PAGE_SIZE;
 
     retries = EEPROM_NR_OF_WRITE_RETRIES;
     while (retries --)
     {
-      i2c_write_status = Target_I2cWrite(eeprom_bus_write_address, tx_buffer, (EEPROM_NR_OF_ADDR_BYTES + current_max_len));
+      i2c_write_status = Target_I2cWrite(eeprom_bus_write_address, tx_buffer, (I2C_EEPROM_NR_OF_ADDR_BYTES + current_max_len));
       if (OK == i2c_write_status)
         break;
     }
@@ -155,11 +121,11 @@ error_code_t StorageI2cEeprom_NvMemWrite(uint16_t addr, uint8_t *data, uint16_t 
 error_code_t StorageI2cEeprom_NvMemRead(uint16_t addr, uint8_t *data, uint16_t size)
 {
   uint16_t block_addr, current_max_len;
-  uint8_t mem_addr[EEPROM_NR_OF_ADDR_BYTES];
+  uint8_t mem_addr[I2C_EEPROM_NR_OF_ADDR_BYTES];
   uint8_t eeprom_bus_write_address, eeprom_bus_read_address;
   error_code_t i2c_access_status;
 
-  if((addr + size) > EEPROM_SIZE)
+  if((addr + size) > I2C_EEPROM_SIZE)
     return STORAGE_DATA_TOO_BIG;
 
   block_addr = addr;

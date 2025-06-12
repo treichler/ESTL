@@ -68,7 +68,7 @@
 //  Local prototypes
 //-------------------------------------------------------------------------------------------------
 static inline error_code_t Storage_NvMemRead(uint16_t addr, uint8_t *data, uint16_t size);
-static inline error_code_t Storage_NvMemWrite(uint16_t addr, uint8_t *data, uint16_t size);
+static inline error_code_t Storage_NvMemWrite(uint16_t addr, const uint8_t *data, uint16_t size);
 static inline int32_t Storage_GetSize(void);
 
 
@@ -78,7 +78,7 @@ struct {
 #define FAKE_NV_MEMORY_size  (256)
   uint8_t       fake_nv_memory[FAKE_NV_MEMORY_size];
 #endif
-} Storage_data;
+} StorageEeprom_data;
 
 
 #ifndef ESTL_STORAGE_HARDWARE
@@ -96,7 +96,7 @@ error_code_t Storage_NvMemRead(uint16_t addr, uint8_t *data, uint16_t size)
   return StorageI2cEeprom_NvMemRead(addr, data, size);
 }
 
-error_code_t Storage_NvMemWrite(uint16_t addr, uint8_t *data, uint16_t size)
+error_code_t Storage_NvMemWrite(uint16_t addr, const uint8_t *data, uint16_t size)
 {
   return StorageI2cEeprom_NvMemWrite(addr, data, size);
 }
@@ -112,19 +112,19 @@ int32_t Storage_GetSize(void)
  * @name Wrapper for faking storage functions in RAM
  * @{
  */
-error_code_t Storage_NvMemWrite(uint16_t addr, uint8_t *data, uint16_t size)
+error_code_t Storage_NvMemWrite(uint16_t addr, const uint8_t *data, uint16_t size)
 {
-  if((addr + size) >= sizeof(Storage_data.fake_nv_memory))
+  if((addr + size) >= sizeof(StorageEeprom_data.fake_nv_memory))
     return NOT_ACCESSIBLE;
-  memcpy(Storage_data.fake_nv_memory+addr, data, size);
+  memcpy(StorageEeprom_data.fake_nv_memory+addr, data, size);
   return OK;
 }
 
 error_code_t Storage_NvMemRead(uint16_t addr, uint8_t *data, uint16_t size)
 {
-  if((addr + size) >= sizeof(Storage_data.fake_nv_memory))
+  if((addr + size) >= sizeof(StorageEeprom_data.fake_nv_memory))
     return NOT_ACCESSIBLE;
-  memcpy(data, Storage_data.fake_nv_memory+addr, size);
+  memcpy(data, StorageEeprom_data.fake_nv_memory+addr, size);
   return OK;
 }
 
@@ -193,7 +193,7 @@ error_code_t StorageEeprom_Init(void)
   if( addr > Storage_GetSize() )
     return STORAGE_NVMEM_TOO_SMALL;
 
-  Storage_data.is_initialized = TRUE;
+  StorageEeprom_data.is_initialized = TRUE;
   return OK;
 }
 
@@ -201,11 +201,11 @@ error_code_t StorageEeprom_Init(void)
 /**
  * See Storage_Write() for further information.
  */
-error_code_t StorageEeprom_Write(storage_id_t index, void *data, int16_t size)
+error_code_t StorageEeprom_Write(storage_id_t index, const void *data, int16_t size)
 {
   error_code_t write_status;
   storage_header_t header;
-  if( ! Storage_data.is_initialized )
+  if( ! StorageEeprom_data.is_initialized )
     return STORAGE_NOT_INITIALIZED;
   if( index >= NR_OF_STORAGES )
     return INDEX_OUT_OF_BOUNDARY;
@@ -232,7 +232,7 @@ int32_t StorageEeprom_Read(storage_id_t index, void *data, int16_t size)
 {
   error_code_t read_status;
   storage_header_t header;
-  if( ! Storage_data.is_initialized )
+  if( ! StorageEeprom_data.is_initialized )
     return STORAGE_NOT_INITIALIZED;
   if( index >= NR_OF_STORAGES )
     return (int32_t)INDEX_OUT_OF_BOUNDARY;

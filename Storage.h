@@ -45,7 +45,7 @@
  * to its usage (see ::storage_id_t).
  * Depending on the memory technology dedicated algorithms are required.
  * The dedicated implementations could be found in storage's sub-modules
- * @ref STORAGE_EEPROM and @ref STORAGE_FLASH.
+ * @ref STORAGE_EEPROM, @ref STORAGE_EEPROM_ALTERNATE and @ref STORAGE_FLASH.
  * In the file ESTL_Config.h the desired algorithm is configured.
  * All algorithms have in common, that each data-block has a related header
  * containing data-block identifier, data size and a checksum to grant data
@@ -69,12 +69,18 @@ typedef enum {
 /** @cond */
 // EEprom storage
 extern error_code_t StorageEeprom_Init( void );
-extern error_code_t StorageEeprom_Write( storage_id_t index, void *data, int16_t size );
+extern error_code_t StorageEeprom_Write( storage_id_t index, const void *data, int16_t size );
 extern int32_t StorageEeprom_Read( storage_id_t index, void *data, int16_t size );
+
+// Alternating EEprom storage
+extern error_code_t StorageEepromAlternate_Init( void );
+extern error_code_t StorageEepromAlternate_Write( storage_id_t index, const void *data, int16_t size );
+extern int32_t StorageEepromAlternate_Read( storage_id_t index, void *data, int16_t size );
+extern error_code_t StorageEepromAlternate_GetImageVitality( storage_id_t index );
 
 // Flash storage
 extern error_code_t StorageFlash_Init( void );
-extern error_code_t StorageFlash_Write( storage_id_t index, void *data, int16_t size );
+extern error_code_t StorageFlash_Write( storage_id_t index, const void *data, int16_t size );
 extern int32_t StorageFlash_Read( storage_id_t index, void *data, int16_t size );
 /** @endcond */
 
@@ -86,12 +92,14 @@ extern int32_t StorageFlash_Read( storage_id_t index, void *data, int16_t size )
  *   @retval  STORAGE_ENUM_MISMATCH  Storage_table does not fit to data-block enumeration
  *   @retval  STORAGE_SIZE_MISMATCH  Requested data-block sizes do not fit into non-volatile memory
  */
-static inline error_code_t Storage_Init(void)
+static inline error_code_t Storage_Init( void )
 {
 #if( ESTL_STORAGE_HARDWARE == ESTL_STORAGE_HARDWARE_FAKE_NV_MEMORY )
   return StorageEeprom_Init();
 #elif( ESTL_STORAGE_HARDWARE == ESTL_STORAGE_HARDWARE_I2CEEPROM )
   return StorageEeprom_Init();
+#elif( ESTL_STORAGE_HARDWARE == ESTL_STORAGE_HARDWARE_I2CEEPROM_ALTERNATE )
+  return StorageEepromAlternate_Init();
 #elif( ESTL_STORAGE_HARDWARE == ESTL_STORAGE_HARDWARE_FLASH )
   return StorageFlash_Init();
 #else
@@ -108,12 +116,14 @@ static inline error_code_t Storage_Init(void)
  * @return                           Error code depending on write success.
  *   @retval  OK                     On success.
  */
-static inline error_code_t Storage_Write(storage_id_t index, void *data, int16_t size)
+static inline error_code_t Storage_Write( storage_id_t index, const void *data, int16_t size )
 {
 #if( ESTL_STORAGE_HARDWARE == ESTL_STORAGE_HARDWARE_FAKE_NV_MEMORY )
   return StorageEeprom_Write( index, data, size );
 #elif( ESTL_STORAGE_HARDWARE == ESTL_STORAGE_HARDWARE_I2CEEPROM )
   return StorageEeprom_Write( index, data, size );
+#elif( ESTL_STORAGE_HARDWARE == ESTL_STORAGE_HARDWARE_I2CEEPROM_ALTERNATE )
+  return StorageEepromAlternate_Write( index, data, size );
 #elif( ESTL_STORAGE_HARDWARE == ESTL_STORAGE_HARDWARE_FLASH )
   return StorageFlash_Write( index, data, size );
 #endif
@@ -122,20 +132,51 @@ static inline error_code_t Storage_Write(storage_id_t index, void *data, int16_t
 
 /**
  * Read data from non-volatile memory.
- * @param[in] index                  Index of the desired data-block
- * @param[in] data                   Pointer to buffer where the data should be read
- * @param[in] size                   Size of the provided data-buffer
+ * @param[in]  index                 Index of the desired data-block
+ * @param[out] data                  Pointer to buffer where the data should be read
+ * @param[in]  size                  Size of the provided data-buffer
  * @return                           Zero and positive values represent the read data size,
  *                                   negative values represent the error code on read fail.
  */
-static inline int32_t Storage_Read(storage_id_t index, void *data, int16_t size)
+static inline int32_t Storage_Read( storage_id_t index, void *data, int16_t size )
 {
 #if( ESTL_STORAGE_HARDWARE == ESTL_STORAGE_HARDWARE_FAKE_NV_MEMORY )
   return StorageEeprom_Read( index, data, size );
 #elif( ESTL_STORAGE_HARDWARE == ESTL_STORAGE_HARDWARE_I2CEEPROM )
   return StorageEeprom_Read( index, data, size );
+#elif( ESTL_STORAGE_HARDWARE == ESTL_STORAGE_HARDWARE_I2CEEPROM_ALTERNATE )
+  return StorageEepromAlternate_Read( index, data, size );
 #elif( ESTL_STORAGE_HARDWARE == ESTL_STORAGE_HARDWARE_FLASH )
   return StorageFlash_Read( index, data, size );
+#endif
+}
+
+
+/**
+ * Get the vitality of a data image.
+ * This function is an add-on to Storage_Read().
+ * If Storage_Read() returns valid data, the vitality of this data can be
+ * verified with this function.
+ * It depends on the configured storage algorithm if this function returns
+ * further information.
+ *
+ * @param[in] index                     Index of the desired data-block
+ * @return                              Error code.
+ *   @retval  OK                        No uncertainties in data-image.
+ *   @retval  STORAGE_IMAGE_UNCERTAIN   Uncertainties in data-images
+ *                                      e.g. a fall-back image could be currently in use.
+ *   @retval  INDEX_OUT_OF_BOUNDARY     Requested storage image does not exist.
+ */
+static inline error_code_t Storage_GetImageVitality( storage_id_t index )
+{
+#if( ESTL_STORAGE_HARDWARE == ESTL_STORAGE_HARDWARE_FAKE_NV_MEMORY )
+  return OK;
+#elif( ESTL_STORAGE_HARDWARE == ESTL_STORAGE_HARDWARE_I2CEEPROM )
+  return OK;
+#elif( ESTL_STORAGE_HARDWARE == ESTL_STORAGE_HARDWARE_I2CEEPROM_ALTERNATE )
+  return StorageEepromAlternate_GetImageVitality( index );
+#elif( ESTL_STORAGE_HARDWARE == ESTL_STORAGE_HARDWARE_FLASH )
+  return OK;
 #endif
 }
 
