@@ -62,8 +62,8 @@ const char * Error_GetMessage(error_code_t error)
     [STORAGE_INDEX_MISMATCH       - UNKNOWN_ERROR] = "Storage index mismatch",
     [STORAGE_DATA_TOO_BIG         - UNKNOWN_ERROR] = "Storage data too big",
     [STORAGE_DATA_UNAVAILABLE     - UNKNOWN_ERROR] = "Storage data unavailable",
+    [STORAGE_IMAGE_UNCERTAIN      - UNKNOWN_ERROR] = "Data image is uncertain",
 
-    [PARAMETER_STORAGE_MISSING    - UNKNOWN_ERROR] = "Parameter storage missing",
     [PARAMETER_WRITE_PROTECTED    - UNKNOWN_ERROR] = "Parameter write protected",
     [PARAMETER_ACCESS_DENIED      - UNKNOWN_ERROR] = "Parameter access denied",
     [PARAMETER_HIDDEN             - UNKNOWN_ERROR] = "Parameter is hidden",

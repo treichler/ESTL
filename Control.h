@@ -57,7 +57,7 @@ error_code_t Control_SetLimit( control_t * control, int16_t min, int16_t max );
 void Control_SetKp( control_t * control, int16_t k_p );
 error_code_t Control_SetTn( control_t * control, int16_t t_n );
 void Control_SetKi( control_t * control, int16_t k_i );
-void Control_SetKc( control_t * control, int16_t k_ic );
+void Control_SetKc( control_t * control, int16_t k_c );
 void Control_ClearIntegral( control_t * control );
 int16_t Control_PI( control_t * control, int16_t error );
 

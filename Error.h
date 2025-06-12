@@ -75,8 +75,8 @@ typedef enum {
   STORAGE_INDEX_MISMATCH,       //!<  Index in storage table and NV-memory do not match
   STORAGE_DATA_TOO_BIG,         //!<  Data does not fit into reserved non-volatile memory area
   STORAGE_DATA_UNAVAILABLE,     //!<  The requested data is not available
+  STORAGE_IMAGE_UNCERTAIN,      //!<  Data image in use is good, but it is uncertain if it is the newest
 
-  PARAMETER_STORAGE_MISSING,    //!<  @deprecated Parameter storage is missing
   PARAMETER_WRITE_PROTECTED,    //!<  Accessing write protected parameter value
   PARAMETER_ACCESS_DENIED,      //!<  Access is denied due to wrong access level
   PARAMETER_HIDDEN,             //!<  Parameter is hidden due to wrong access level

@@ -248,7 +248,7 @@ error_code_t Parameter_Init( bool_t load_nv_data );
 
 /**
  * Set a serial-number callback function, which is called every time the
- * related system parameter @ref ESTL_PARAM_SN "SN" is written or initialized.
+ * related system parameter @ref ESTL_PARAM_SN "SN" is accessed.
  * The callback's only argument holds the serial-number which has to fit into
  * the uint32_t range.
  *

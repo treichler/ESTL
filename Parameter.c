@@ -781,10 +781,7 @@ error_code_t Parameter_Init( bool_t load_nv_data )
   else
     Parameter_Data.init_error = init_status;
 #else
-  if( OK != table_crc_status )
-    Parameter_Data.init_error = table_crc_status;
-  else
-    Parameter_Data.init_error = PARAMETER_STORAGE_MISSING;
+  Parameter_Data.init_error = table_crc_status;
 #endif
   return Parameter_Data.init_error;
 }
