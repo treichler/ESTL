@@ -52,9 +52,10 @@
  * @brief Enumerate different storage hardware variants
  * @{
  */
-#define ESTL_STORAGE_HARDWARE_FAKE_NV_MEMORY    (1)     //!< Emulate storage functionality in RAM
-#define ESTL_STORAGE_HARDWARE_I2CEEPROM         (2)     //!< EEprom connected to I2C
-#define ESTL_STORAGE_HARDWARE_FLASH             (3)     //!< Internal flash
+#define ESTL_STORAGE_HARDWARE_FAKE_NV_MEMORY       (1)  //!< Emulate storage functionality in RAM
+#define ESTL_STORAGE_HARDWARE_I2CEEPROM            (2)  //!< EEprom connected to I2C
+#define ESTL_STORAGE_HARDWARE_I2CEEPROM_ALTERNATE  (3)  //!< EEprom connected to I2C, alternating memory
+#define ESTL_STORAGE_HARDWARE_FLASH                (4)  //!< Internal flash
 /** @} */
 
 
