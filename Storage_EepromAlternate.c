@@ -171,6 +171,7 @@ error_code_t StorageEepromAlternate_Init( void )
   uint16_t addr[AMOUNT_OF_ALTERNATING_BLOCKS] = {0, I2C_EEPROM_SIZE / 2};
   storage_header_t header;
   uint8_t buffer[MAX_IMAGE_SIZE - sizeof(storage_header_t)];
+  error_code_t ret = OK;
 
   for( i = 0; i < NR_OF_STORAGES; i ++ )
   {
@@ -189,12 +190,18 @@ error_code_t StorageEepromAlternate_Init( void )
           StorageEepromAlternate_data.storage_entry[i].current_block = b;
         }
       }
+      else
+      {
+        // ignore STORAGE_INDEX_MISMATCH errors
+        if( STORAGE_INDEX_MISMATCH != error )
+          ret = error;
+      }
       addr[b] += estimated_image_sizes[i];
     }
   }
 
   StorageEepromAlternate_data.is_initialized = TRUE;
-  return OK;
+  return ret;
 }
 
 

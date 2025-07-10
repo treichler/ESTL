@@ -89,7 +89,7 @@ error_code_t StorageI2cEeprom_NvMemWrite(uint16_t addr, const uint8_t *data, uin
     data += current_max_len;
 
     // prepare memory/page address
-#if( EEPROM_NR_OF_ADDR_BYTES > 1 )
+#if( I2C_EEPROM_NR_OF_ADDR_BYTES > 1 )
     tx_buffer[0] = (uint8_t)(page_addr >> 8);
     tx_buffer[1] = (uint8_t)(page_addr & 0xFF);
 #else
@@ -136,7 +136,7 @@ error_code_t StorageI2cEeprom_NvMemRead(uint16_t addr, uint8_t *data, uint16_t s
       current_max_len = size;
     size -= current_max_len;
 
-#if( EEPROM_NR_OF_ADDR_BYTES > 1 )
+#if( I2C_EEPROM_NR_OF_ADDR_BYTES > 1 )
     mem_addr[0] = (uint8_t)(block_addr >> 8);
     mem_addr[1] = (uint8_t)(block_addr & 0xFF);
     eeprom_bus_write_address = EEPROM_BUS_WRITE_ADDRESS;
