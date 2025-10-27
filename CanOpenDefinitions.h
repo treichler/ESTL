@@ -63,6 +63,8 @@
 
 #define CANOPEN_BASE_ADDR_NMT           (0x700)
 
+#define CANOPEN_ADDR_LSS_TX             (0x7E4)
+#define CANOPEN_ADDR_LSS_RX             (0x7E5)
 /**
  * @} end of CANOPEN
  */
