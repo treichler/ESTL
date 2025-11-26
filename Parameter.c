@@ -42,6 +42,7 @@
 #include "Parameter.h"
 #include "Parameter_TableIndices.h"
 #include "Parameter_Table.h"
+#include "Parameter_Sdo.h"
 #ifdef ESTL_ENABLE_DEBUG
   #include "Debug.h"
 #endif
@@ -135,6 +136,10 @@
                                  "4 ro: complete\n" \
                                  "5 rw: read buffer\n" \
                                  "6 rw: DAQ mode")
+
+// remote parameter SDO index range
+#define P_SDO_MIN (0x2000)
+#define P_SDO_MAX (0x5FFF - PARAMETER_SDO_AMOUNT_OF_SDO_INDICES)
 
 
 //-------------------------------------------------------------------------------------------------
@@ -392,6 +397,10 @@ const parameter_table_entry_t System_Parameter_table[] = {
   [ESTL_PARAM_RF_AESKEY_3] = {"RF-AES3",    UNIT_NONE,            REPR_HEX,  LEVEL_1|R_W|NVMEM,        INT32_MIN,          0,      INT32_MAX,     &RfApp_AesParameterFunction,  HELP_TEXT("AES key for RF-link. Encryption is disabled if all AES-keys are 0.")},
   [ESTL_PARAM_RF_AESKEY_4] = {"RF-AES4",    UNIT_NONE,            REPR_HEX,  LEVEL_1|R_W|NVMEM,        INT32_MIN,          0,      INT32_MAX,     &RfApp_AesParameterFunction,  HELP_TEXT("AES key for RF-link. Encryption is disabled if all AES-keys are 0.")},
 #endif
+#ifdef ESTL_ENABLE_TERMINAL_REMOTE_PARAMETER
+  // remote parameter
+  [ESTL_PARAM_P_SDO_INDEX] = {"sdo-index",  UNIT_NONE,         REPR_HEX_04,  LEVEL_0|R_W|NVMEM|INFO,   P_SDO_MIN,  P_SDO_MAX,      P_SDO_MAX,  &ParameterSdo_SdoIndexParaFunc,  HELP_TEXT("SDO start index of remote parameter")},
+#endif
 #ifdef ESTL_ENABLE_DEBUG
   // debug
   [ESTL_PARAM_D_INDEX]     = {"d-index",    UNIT_NONE,            REPR_DEC,  LEVEL_2|R_W|HIDE|INFO,    DEBUG_MIN,  DEBUG_MIN,      DEBUG_MAX,   &Debug_IndexParameterFunction,  HELP_TEXT("The selected channel of the debug module")},
@@ -400,6 +409,7 @@ const parameter_table_entry_t System_Parameter_table[] = {
   [ESTL_PARAM_D_DATA]      = {"d-data",     UNIT_NONE,         REPR_HEX_08,  LEVEL_2|R_W|HIDE,         INT32_MIN,          0,      INT32_MAX,    &Debug_DataParameterFunction,  HELP_TEXT("Access the variable.\nIf mask is 0, then the content of the debug lookup-table will be read.")},
 #endif
 #if( defined(ESTL_ENABLE_SCOPE) && defined(ESTL_ENABLE_DEBUG) )
+  // scope
   [ESTL_PARAM_S_CMD]       = {"s-cmd",      UNIT_NONE,            REPR_DEC,  LEVEL_2|R_W|HIDE,         INT32_MIN,          0,      INT32_MAX,     &Scope_CmdParameterFunction,  HELP_TEXT(SCOPE_HELP_STR)},
   [ESTL_PARAM_S_DIV]       = {"s-div",      UNIT_NONE,            REPR_DEC,  LEVEL_2|R_W|HIDE|INFO,            1,          1,     UINT16_MAX,   &Scope_SetupParameterFunction,  HELP_TEXT("Sample divider - save every nth sample.")},
   [ESTL_PARAM_S_PRE]       = {"s-pre",      UNIT_PERCENT,         REPR_DEC,  LEVEL_2|R_W|HIDE|INFO,            0,          0,            100,   &Scope_SetupParameterFunction,  HELP_TEXT("Pre-trigger buffer size.")},
@@ -476,6 +486,9 @@ uint32_t Parameter_GetSerialNumber(void)
  */
 error_code_t Parameter_GetEntry(const parameter_table_entry_t ** parameter_table_entry, int16_t parameter_index)
 {
+  if( SYSTEM_PARAMETER_TABLE_NR_OF_ENTRIES > (-PARAMETER_INDEX_LIMIT_MIN) )
+    return PARAMETER_FATAL_ERROR;
+
   if( parameter_index >= 0 )
     return ParameterTable_GetEntry(parameter_table_entry, parameter_index);
 

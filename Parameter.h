@@ -80,6 +80,21 @@
 
 
 /**
+ * @name Parameter-index absolute range.
+ *
+ * These defines set the absolute maximum index range which is allowed for parameter entries.
+ * The range 0 to @ref PARAMETER_INDEX_LIMIT_MAX defines the maximum allowed amount of entries in the application's parameter-table,
+ * while the range @ref PARAMETER_INDEX_LIMIT_MIN to -1 defines the maximum allowed amount of entries in the system parameter-table.
+ * Hence @ref PARAMETER_INDEX_LIMIT_MIN always has to be defined with a negative value respectively
+ * @ref PARAMETER_INDEX_LIMIT_MAX always has to be defined with a positive value
+ * @{
+ */
+#define PARAMETER_INDEX_LIMIT_MIN    (-255)  //!< @def PARAMETER_INDEX_LIMIT_MIN Minimum possible parameter index.
+#define PARAMETER_INDEX_LIMIT_MAX     (767)  //!< @def PARAMETER_INDEX_LIMIT_MAX Maximum possible parameter index.
+/** @} */
+
+
+/**
  * System Parameter Table's indices
  */
 enum {
@@ -95,6 +110,9 @@ enum {
   ESTL_PARAM_RF_AESKEY_2,                    //!<
   ESTL_PARAM_RF_AESKEY_3,                    //!<
   ESTL_PARAM_RF_AESKEY_4,                    //!<
+#endif
+#ifdef ESTL_ENABLE_TERMINAL_REMOTE_PARAMETER
+  ESTL_PARAM_P_SDO_INDEX,
 #endif
 #ifdef ESTL_ENABLE_DEBUG
   ESTL_PARAM_D_INDEX,                        //!< debug set index
@@ -127,6 +145,9 @@ enum {
   PARAM_RF_AESKEY_2      = (-1 - ESTL_PARAM_RF_AESKEY_2),
   PARAM_RF_AESKEY_3      = (-1 - ESTL_PARAM_RF_AESKEY_3),
   PARAM_RF_AESKEY_4      = (-1 - ESTL_PARAM_RF_AESKEY_4),
+#endif
+#ifdef ESTL_ENABLE_TERMINAL_REMOTE_PARAMETER
+  PARAM_P_SDO_INDEX      = (-1 - ESTL_PARAM_P_SDO_INDEX),
 #endif
 #ifdef ESTL_ENABLE_DEBUG
   PARAM_D_INDEX          = (-1 - ESTL_PARAM_D_INDEX),

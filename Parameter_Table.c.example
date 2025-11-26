@@ -47,8 +47,9 @@ const parameter_table_entry_t Parameter_table[] = {
 
 error_code_t ParameterTable_GetEntry(const parameter_table_entry_t ** table_entry, parameter_table_index_t index)
 {
-  if( NR_OF_PARAMETER_TABLE_ENTRIES != PARAMETER_TABLE_NR_OF_ENTRIES )
-    return PARAMETER_ENUM_MISMATCH;
+  if( (NR_OF_PARAMETER_TABLE_ENTRIES != PARAMETER_TABLE_NR_OF_ENTRIES) ||
+      (NR_OF_PARAMETER_TABLE_ENTRIES > (PARAMETER_INDEX_LIMIT_MAX + 1)) )
+    return PARAMETER_FATAL_ERROR;
   if( index >= NR_OF_PARAMETER_TABLE_ENTRIES )
     return INDEX_OUT_OF_BOUNDARY;
   *table_entry = &Parameter_table[index];

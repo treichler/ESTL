@@ -80,7 +80,7 @@ typedef enum {
   PARAMETER_WRITE_PROTECTED,    //!<  Accessing write protected parameter value
   PARAMETER_ACCESS_DENIED,      //!<  Access is denied due to wrong access level
   PARAMETER_HIDDEN,             //!<  Parameter is hidden due to wrong access level
-  PARAMETER_ENUM_MISMATCH,      //!<  Number of entries in parameter and enumerator do not match
+  PARAMETER_FATAL_ERROR,        //!<  Fatal error in parameter-table arrangement
   PARAMETER_CONTENT_CHANGE,     //!<  Content has changed due to new or gone non-volatile parameter
   PARAMETER_REV_MINOR_CHANGE,   //!<  Minor revision in parameter image has changed
   PARAMETER_REV_MAJOR_CHANGE,   //!<  Major revision in parameter image has changed

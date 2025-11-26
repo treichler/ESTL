@@ -41,7 +41,28 @@
  * to parameter via an CANopen compatible SDO interface.
  * Therefore all parameter related functionality is mapped into manufacturer
  * specific profile area, located in SDO index range 0x2000..0x5FFF.
+ * @{
  */
+
+
+/**
+ * Define the amount of bits reserved for addressing table and parameter properties.
+ */
+#define PARAMETER_SDO_BITS_FOR_PROPERTIES       (3)
+
+
+/**
+ * Provide the amount of consecutive SDO indices that are required for mapping
+ * the parameter-interface into the manufacturer specific profile area.
+ */
+#define PARAMETER_SDO_AMOUNT_OF_SDO_INDICES     ((PARAMETER_INDEX_LIMIT_MAX + 1 - PARAMETER_INDEX_LIMIT_MIN) >> (8 - PARAMETER_SDO_BITS_FOR_PROPERTIES))
+
+
+/**
+ * Parameter function to set the SDO start index.
+ * @return      No checking is performed, so always OK is returned.
+ */
+extern error_code_t ParameterSdo_SdoIndexParaFunc(function_call_t function_call, int32_t * index);
 
 
 /**
@@ -53,7 +74,7 @@
  *   @retval OK                         Data successfully read.
  *   @retval SDO_CONNECTION_FAILED      Data could not be read due to SDO connection failure.
  */
-error_code_t ParameterSdo_ReadTableIndexRange( uint8_t node_id, range_t * parameter_index_range );
+extern error_code_t ParameterSdo_ReadTableIndexRange( uint8_t node_id, range_t * parameter_index_range );
 
 
 /**
@@ -65,7 +86,7 @@ error_code_t ParameterSdo_ReadTableIndexRange( uint8_t node_id, range_t * parame
  *   @retval OK                         Data successfully read.
  *   @retval SDO_CONNECTION_FAILED      Data could not be read due to SDO connection failure.
  */
-error_code_t ParameterSdo_ReadTableCrc( uint8_t node_id, uint32_t * crc );
+extern error_code_t ParameterSdo_ReadTableCrc( uint8_t node_id, uint32_t * crc );
 
 
 /**
@@ -81,7 +102,7 @@ error_code_t ParameterSdo_ReadTableCrc( uint8_t node_id, uint32_t * crc );
  *   @retval OK                         Data successfully read.
  *   @retval SDO_CONNECTION_FAILED      Data could not be read due to SDO connection failure.
  */
-error_code_t ParameterSdo_ReadName( uint8_t node_id, int16_t parameter_index, char * name, uint16_t len );
+extern error_code_t ParameterSdo_ReadName( uint8_t node_id, int16_t parameter_index, char * name, uint16_t len );
 
 
 /**
@@ -97,7 +118,7 @@ error_code_t ParameterSdo_ReadName( uint8_t node_id, int16_t parameter_index, ch
  *   @retval OK                         Data successfully read.
  *   @retval SDO_CONNECTION_FAILED      Data could not be read due to SDO connection failure.
  */
-error_code_t ParameterSdo_ReadInfo( uint8_t node_id, int16_t parameter_index, char * info, uint16_t len );
+extern error_code_t ParameterSdo_ReadInfo( uint8_t node_id, int16_t parameter_index, char * info, uint16_t len );
 
 
 /**
@@ -110,7 +131,7 @@ error_code_t ParameterSdo_ReadInfo( uint8_t node_id, int16_t parameter_index, ch
  *   @retval OK                         Data successfully read.
  *   @retval SDO_CONNECTION_FAILED      Data could not be read due to SDO connection failure.
  */
-error_code_t ParameterSdo_ReadValue( uint8_t node_id, int16_t parameter_index, int32_t * value );
+extern error_code_t ParameterSdo_ReadValue( uint8_t node_id, int16_t parameter_index, int32_t * value );
 
 
 /**
@@ -123,7 +144,7 @@ error_code_t ParameterSdo_ReadValue( uint8_t node_id, int16_t parameter_index, i
  *   @retval OK                         Data successfully written.
  *   @retval SDO_CONNECTION_FAILED      Data could not be written due to SDO connection failure.
  */
-error_code_t ParameterSdo_WriteValue( uint8_t node_id, int16_t parameter_index, int32_t value );
+extern error_code_t ParameterSdo_WriteValue( uint8_t node_id, int16_t parameter_index, int32_t value );
 
 
 /**
@@ -138,7 +159,7 @@ error_code_t ParameterSdo_WriteValue( uint8_t node_id, int16_t parameter_index, 
  *   @retval OK                         Data successfully read.
  *   @retval SDO_CONNECTION_FAILED      Data could not be read due to SDO connection failure.
  */
-error_code_t ParameterSdo_ReadTableEntry( uint8_t node_id, int16_t parameter_index, parameter_data_t * parameter_data );
+extern error_code_t ParameterSdo_ReadTableEntry( uint8_t node_id, int16_t parameter_index, parameter_data_t * parameter_data );
 
 
 /**
@@ -165,7 +186,7 @@ error_code_t ParameterSdo_ReadTableEntry( uint8_t node_id, int16_t parameter_ind
  *   @retval    1       processed in callback, auto-send returned message
  *   @retval    2       processed in callback, don't send response
  */
-uint8_t ParameterSdo_CallbackSdoReq( uint8_t length_req, uint8_t *req_ptr, uint8_t *length_resp, uint8_t *resp_ptr );
+extern uint8_t ParameterSdo_CallbackSdoReq( uint8_t length_req, uint8_t *req_ptr, uint8_t *length_resp, uint8_t *resp_ptr );
 
 
 /**

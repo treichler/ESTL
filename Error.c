@@ -67,7 +67,7 @@ const char * Error_GetMessage(error_code_t error)
     [PARAMETER_WRITE_PROTECTED    - UNKNOWN_ERROR] = "Parameter write protected",
     [PARAMETER_ACCESS_DENIED      - UNKNOWN_ERROR] = "Parameter access denied",
     [PARAMETER_HIDDEN             - UNKNOWN_ERROR] = "Parameter is hidden",
-    [PARAMETER_ENUM_MISMATCH      - UNKNOWN_ERROR] = "Parameter enum mismatch",
+    [PARAMETER_FATAL_ERROR        - UNKNOWN_ERROR] = "Fatal error in parameter-table",
     [PARAMETER_CONTENT_CHANGE     - UNKNOWN_ERROR] = "Parameter content change",
     [PARAMETER_REV_MINOR_CHANGE   - UNKNOWN_ERROR] = "Parameter revision minor change",
     [PARAMETER_REV_MAJOR_CHANGE   - UNKNOWN_ERROR] = "Parameter revision major change",
