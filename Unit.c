@@ -86,6 +86,7 @@ const char * Unit_GetString(unit_t unit)
     [UNIT_K_VAR]                = "kvar",
     [UNIT_VAR_HOUR]             = "varh",
     [UNIT_K_VAR_HOUR]           = "kvarh",
+    [UNIT_DEGREE]               = "°",
   };
   if( (unit >= NR_OF_UNITS) || (NULL == unit_str[unit]) )
     unit = UNIT_NONE;

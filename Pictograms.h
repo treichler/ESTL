@@ -66,19 +66,19 @@ extern const pictogram_t pic_prev;
 extern const pictogram_t pic_source;
 
 
-const pictogram_t temp_indoor_14;
-const pictogram_t temp_outside_14;
-const pictogram_t solar_14;
-const pictogram_t battery_14;
-const pictogram_t humidity_14;
-const pictogram_t water_tap_14;
-const pictogram_t sun_14;
-const pictogram_t noise_14;
-const pictogram_t hot_surface_14;
-const pictogram_t power_indoor_14;
-const pictogram_t socket_indoor_14;
-const pictogram_t electricity_indoor_14;
-const pictogram_t electricity_14;
+extern const pictogram_t temp_indoor_14;
+extern const pictogram_t temp_outside_14;
+extern const pictogram_t solar_14;
+extern const pictogram_t battery_14;
+extern const pictogram_t humidity_14;
+extern const pictogram_t water_tap_14;
+extern const pictogram_t sun_14;
+extern const pictogram_t noise_14;
+extern const pictogram_t hot_surface_14;
+extern const pictogram_t power_indoor_14;
+extern const pictogram_t socket_indoor_14;
+extern const pictogram_t electricity_indoor_14;
+extern const pictogram_t electricity_14;
 
 
 /**

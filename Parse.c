@@ -38,7 +38,7 @@
 #define MAX_FRACTION_DIGITS (5)
 
 
-uint16_t Parse_StrToFrac(char * str)
+uint16_t Parse_StrToFrac( const char * str )
 {
   uint32_t value = 0; //, factor = 1;
   uint8_t i = 0;
@@ -60,9 +60,9 @@ uint16_t Parse_StrToFrac(char * str)
 }
 
 
-uint32_t Parse_StrToUint(char ** str, uint8_t radix)
+uint32_t Parse_StrToUint( const char ** str, uint8_t radix )
 {
-  char *parse_end, *str_end;
+  const char *parse_end, *str_end;
   char digit;
   uint32_t value = 0, factor = 1;
 
@@ -92,7 +92,7 @@ uint32_t Parse_StrToUint(char ** str, uint8_t radix)
 }
 
 
-int32_t Parse_StrToValue(char * str) //, int8_t radix)
+int32_t Parse_StrToValue( const char * str )
 {
   int32_t value = 0;
   int8_t radix = 10;

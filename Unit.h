@@ -92,6 +92,7 @@ typedef enum {
   UNIT_K_VAR,
   UNIT_VAR_HOUR,                //!<  Reactive Energy
   UNIT_K_VAR_HOUR,
+  UNIT_DEGREE,                  //!<  Angle degree
   NR_OF_UNITS
 } unit_t;
 
