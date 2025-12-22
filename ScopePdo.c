@@ -53,6 +53,7 @@ struct {
   bool_t                (* PrintFunction)(scope_pdo_sample_t*);         //!<  PDO Scope data print function
   uint8_t               sample_buffer_index;
   bool_t                sample_is_complete;
+  uint8_t               node_mask;
 } ScopePdo_data;
 
 
@@ -92,7 +93,7 @@ void ScopePdo_ReceiveDaq( uint8_t node_id, uint8_t * rx )
   }
 
   // write sample to buffer
-  if( SCOPE_PDO_MAX_NR_OF_CHANNELS > channel_index )
+  if( (node_id & ScopePdo_data.node_mask) && (SCOPE_PDO_MAX_NR_OF_CHANNELS > channel_index) )
   {
     ScopePdo_data.sample_buffer[ScopePdo_data.sample_buffer_index].sample[channel_index] = (int32_t)value;
     ScopePdo_data.sample_buffer[ScopePdo_data.sample_buffer_index].node_id = node_id;
@@ -103,6 +104,15 @@ void ScopePdo_ReceiveDaq( uint8_t node_id, uint8_t * rx )
       ScopePdo_data.PrintFunction( &(ScopePdo_data.sample_buffer[ScopePdo_data.sample_buffer_index]) );
   }
 }
+
+
+error_code_t ScopePdo_NodeMaskParaFunc( function_call_t function_call, int32_t * mask )
+{
+  if( (FUNCTION_INIT == function_call) || (FUNCTION_WRITE == function_call) )
+    ScopePdo_data.node_mask = (uint8_t)*mask;
+  return OK;
+}
+
 #endif
 
 
@@ -117,18 +127,3 @@ void ScopePdo_PrepareDaqTx( uint8_t * tx, int32_t value, uint8_t channel_index, 
   tx[6] = (uint8_t)(value >> 16);
   tx[7] = (uint8_t)(value >> 24);
 }
-
-/*
-bool_t ScopePdo_PrepareTx( uint8_t * tx, uint16_t channel_index )
-{
-  tx[0] = (uint8_t)(ScopePdo_data.sample_index);
-  tx[1] = (uint8_t)(ScopePdo_data.sample_index >> 8);
-  tx[2] = (uint8_t)(channel_index);
-  tx[3] = (uint8_t)(channel_index >> 8);
-  tx[4] = (uint8_t)(ScopePdo_data.sample[ScopePdo_data.sample_index][channel_index]);
-  tx[5] = (uint8_t)(ScopePdo_data.sample[ScopePdo_data.sample_index][channel_index] >> 8);
-  tx[6] = (uint8_t)(ScopePdo_data.sample[ScopePdo_data.sample_index][channel_index] >> 16);
-  tx[7] = (uint8_t)(ScopePdo_data.sample[ScopePdo_data.sample_index][channel_index] >> 24);
-  return FALSE;
-}
-*/

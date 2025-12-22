@@ -56,6 +56,19 @@
 #error "ESTL_TERMINAL_LINE_BREAK not defined or invalid"
 #endif
 
+#ifndef ESTL_TERMINAL_SCOPE_FRAME_DELIMITER
+#define ESTL_TERMINAL_SCOPE_FRAME_DELIMITER  "\t"
+#warning "ESTL_TERMINAL_SCOPE_FRAME_DELIMITER is set to default."
+#endif
+#ifndef ESTL_TERMINAL_SCOPE_FRAME_START
+#define ESTL_TERMINAL_SCOPE_FRAME_START      ""
+#warning "ESTL_TERMINAL_SCOPE_FRAME_START is set to default."
+#endif
+#ifndef ESTL_TERMINAL_SCOPE_FRAME_END
+#define ESTL_TERMINAL_SCOPE_FRAME_END        ""
+#warning "ESTL_TERMINAL_SCOPE_FRAME_END is set to default."
+#endif
+
 
 /**
  * Structure containingTerminal's local static variables
@@ -144,12 +157,13 @@ void Terminal_Task(void)
     if( Terminal_Data.scope_has_new_sample )
     {
       uint16_t i;
-      Terminal_printf( task.terminal, "0x%04X", Terminal_Data.scope_sample_index );
+      Terminal_printf( task.terminal, ESTL_TERMINAL_SCOPE_FRAME_START "0" ESTL_TERMINAL_SCOPE_FRAME_DELIMITER "%d",
+                       Terminal_Data.scope_sample_index );
       for( i = 0; i < ESTL_DEBUG_NR_OF_ENTRIES; i ++ )
       {
-        Terminal_printf( task.terminal, "\t%d", Terminal_Data.scope_sample->channel[i] );
+        Terminal_printf( task.terminal, ESTL_TERMINAL_SCOPE_FRAME_DELIMITER "%d", Terminal_Data.scope_sample->channel[i] );
       }
-      Terminal_printf( task.terminal, LINE_BREAK );
+      Terminal_printf( task.terminal, ESTL_TERMINAL_SCOPE_FRAME_END LINE_BREAK );
       Terminal_Data.scope_has_new_sample = FALSE;
     }
 #endif
@@ -159,15 +173,16 @@ void Terminal_Task(void)
     if( Terminal_Data.scope_pdo_has_new_sample )
     {
       uint8_t i;
-      Terminal_printf( task.terminal, "%d\t0x%04X", Terminal_Data.scope_pdo_sample->node_id, Terminal_Data.scope_pdo_sample->index );
+      Terminal_printf( task.terminal, ESTL_TERMINAL_SCOPE_FRAME_START "%d" ESTL_TERMINAL_SCOPE_FRAME_DELIMITER "%d",
+                       Terminal_Data.scope_pdo_sample->node_id, Terminal_Data.scope_pdo_sample->index );
       for( i = 0; (i < Terminal_Data.scope_pdo_sample->nr_channels) && (i < SCOPE_PDO_MAX_NR_OF_CHANNELS); i ++ )
       {
         if( (1 << i) & Terminal_Data.scope_pdo_sample->validity_bits )
-          Terminal_printf( task.terminal, "\t%d", Terminal_Data.scope_pdo_sample->sample[i] );
+          Terminal_printf( task.terminal, ESTL_TERMINAL_SCOPE_FRAME_DELIMITER "%d", Terminal_Data.scope_pdo_sample->sample[i] );
         else
-          Terminal_printf( task.terminal, "\t##" );
+          Terminal_printf( task.terminal, ESTL_TERMINAL_SCOPE_FRAME_DELIMITER "##" );
       }
-      Terminal_printf( task.terminal, LINE_BREAK );
+      Terminal_printf( task.terminal, ESTL_TERMINAL_SCOPE_FRAME_END LINE_BREAK );
       Terminal_Data.scope_pdo_has_new_sample = FALSE;
     }
 #endif

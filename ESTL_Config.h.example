@@ -81,9 +81,9 @@
  *   4. Serial Number, responds system's serial number (parameter @ref ESTL_PARAM_SN)
  * @{
  */
-#define CANOPEN_VENDOR_ID       (0x89ABCDEF)    //!<  @def CANOPEN_VENDOR_ID Vendor ID
-#define CANOPEN_PRODUCT_CODE    (0x98765432)    //!<  @def CANOPEN_PRODUCT_CODE Product code
-#define CANOPEN_REVISION_NUMBER (0xABCD1234)    //!<  @def CANOPEN_REVISION_NUMBER Revision Number
+#define CANOPEN_VENDOR_ID       (0x89ABCDEF)    //!< Vendor ID
+#define CANOPEN_PRODUCT_CODE    (0x98765432)    //!< Product code
+#define CANOPEN_REVISION_NUMBER (0xABCD1234)    //!< Revision Number
 /** @} */
 
 /**
@@ -104,10 +104,15 @@
 
 #define ESTL_ENABLE_STORAGE
 
-// Define image-size for dedicated storage entries
+/**
+ * @name  Storage Image Sizes
+ * @brief Define image-size for dedicated storage entries
+ * @{
+ */
 #define ESTL_STORAGE_PARAMETER_IMAGE_SIZE            (256)   //!< Parameter image size
 #define ESTL_STORAGE_APPLICATION_IMAGE_SIZE            (0)   //!< Application data image size
 #define ESTL_STORAGE_ADAPTIVE_DATA_IMAGE_SIZE          (0)   //!< Adaptive data image size
+/** @} */
 
 
 /**
@@ -237,6 +242,20 @@
  * - ESTL_TERMINAL_LINE_BREAK_CRLF
  */
 #define ESTL_TERMINAL_LINE_BREAK       ESTL_TERMINAL_LINE_BREAK_CR
+
+/**
+ * @name  Terminal Scope Frame Delimiter/Start/End sequence
+ *
+ * Define a delimiter that separates scope-frame's values respectively start/end
+ * sequence that encapsulates the Scope frame printed to the terminal.
+ * If no dedicated start/end-sequence is required therefore just an empty string
+ * has to be defined.
+ * @{
+ */
+#define ESTL_TERMINAL_SCOPE_FRAME_DELIMITER     ","     //!< Scope frame value's delimiter
+#define ESTL_TERMINAL_SCOPE_FRAME_START         "{"     //!< Scope frame start sequence
+#define ESTL_TERMINAL_SCOPE_FRAME_END           "}"     //!< Scope frame end sequence
+/** @} */
 
 //#define ESTL_ENABLE_TERMINAL_REMOTE_PARAMETER
 #define ESTL_TERMINAL_REMOTE_PARAMETER_CON_TIMEOUT      (100)   //!< Remote Parameter connection timeout [ms]

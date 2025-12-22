@@ -91,7 +91,7 @@ struct {
 
 error_code_t ParameterSdo_SdoIndexParaFunc(function_call_t function_call, int32_t * index)
 {
-  if( (FUNCTION_INIT == function_call) || (FUNCTION_READ == function_call) )
+  if( (FUNCTION_INIT == function_call) || (FUNCTION_WRITE == function_call) )
     ParameterSdo_Data.sdo_start_index = *index;
   return OK;
 }

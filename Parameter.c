@@ -49,6 +49,9 @@
 #if( defined(ESTL_ENABLE_SCOPE) && defined(ESTL_ENABLE_DEBUG) )
   #include "Scope.h"
 #endif
+#ifdef ESTL_ENABLE_TERMINAL_REMOTE_PARAMETER
+  #include "ScopePdo.h"
+#endif
 #ifdef ESTL_ENABLE_RF
   #include "RfApp.h"
 #endif
@@ -400,6 +403,7 @@ const parameter_table_entry_t System_Parameter_table[] = {
 #ifdef ESTL_ENABLE_TERMINAL_REMOTE_PARAMETER
   // remote parameter
   [ESTL_PARAM_P_SDO_INDEX] = {"sdo-index",  UNIT_NONE,         REPR_HEX_04,  LEVEL_0|R_W|NVMEM|INFO,   P_SDO_MIN,  P_SDO_MAX,      P_SDO_MAX,  &ParameterSdo_SdoIndexParaFunc,  HELP_TEXT("SDO start index of remote parameter")},
+  [ESTL_PARAM_P_DAQ_MASK]  = {"daq-mask",   UNIT_NONE,         REPR_HEX_02,  LEVEL_0|R_W|NVMEM|INFO,           0,       0x7F,           0x7F,      &ScopePdo_NodeMaskParaFunc,  HELP_TEXT("Bit-mask to select which nodes DAQ to be printed")},
 #endif
 #ifdef ESTL_ENABLE_DEBUG
   // debug

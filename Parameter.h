@@ -113,6 +113,7 @@ enum {
 #endif
 #ifdef ESTL_ENABLE_TERMINAL_REMOTE_PARAMETER
   ESTL_PARAM_P_SDO_INDEX,
+  ESTL_PARAM_P_DAQ_MASK,
 #endif
 #ifdef ESTL_ENABLE_DEBUG
   ESTL_PARAM_D_INDEX,                        //!< debug set index
@@ -148,6 +149,7 @@ enum {
 #endif
 #ifdef ESTL_ENABLE_TERMINAL_REMOTE_PARAMETER
   PARAM_P_SDO_INDEX      = (-1 - ESTL_PARAM_P_SDO_INDEX),
+  PARAM_P_DAQ_MASK       = (-1 - ESTL_PARAM_P_DAQ_MASK),
 #endif
 #ifdef ESTL_ENABLE_DEBUG
   PARAM_D_INDEX          = (-1 - ESTL_PARAM_D_INDEX),
