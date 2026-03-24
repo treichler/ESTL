@@ -64,6 +64,8 @@ typedef enum {
   TIMEOUT,                      //!<  A general timeout occurred
   RESOURCE_BUSY,                //!<  The requested resource is currently busy
   BUFFER_TOO_SMALL,             //!<  Buffer is too small
+  COMMUNICATION_ERROR,          //!<  General communication error
+  DECRYPTION_ERROR,             //!<  General decryption error
 
   FLASH_WRITE_ERROR,            //!<  FLASH write error
   FLASH_ERASE_ERROR,            //!<  FLASH erase error

@@ -42,7 +42,7 @@ uint16_t Parse_StrToFrac( const char * str )
 {
   uint32_t value = 0; //, factor = 1;
   uint8_t i = 0;
-  const int32_t factor[MAX_FRACTION_DIGITS] = {
+  static const int32_t factor[MAX_FRACTION_DIGITS] = {
       429496730,
        42949673,
         4294968,

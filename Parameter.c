@@ -848,7 +848,6 @@ void Parameter_Task( void )
         nvmem_index ++;
       }
     }
-    Parameter_Data.save_image = FALSE;
     Parameter_Data.task_error = Storage_Write( STORAGE_PARAMETER_IMAGE, (uint8_t*)nv_parameter_entry, nvmem_index * sizeof(nv_parameter_entry_t) );
     Parameter_Data.save_image = FALSE;
   }

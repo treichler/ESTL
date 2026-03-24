@@ -72,6 +72,7 @@ extern error_code_t ParameterSdo_SdoIndexParaFunc(function_call_t function_call,
  * @param parameter_index_range         Pointer to range variable where data is read to.
  * @return                              Success status of SDO read request.
  *   @retval OK                         Data successfully read.
+ *   @retval TIMEOUT                    A timeout occurred during connection attempt.
  *   @retval SDO_CONNECTION_FAILED      Data could not be read due to SDO connection failure.
  */
 extern error_code_t ParameterSdo_ReadTableIndexRange( uint8_t node_id, range_t * parameter_index_range );
@@ -84,6 +85,7 @@ extern error_code_t ParameterSdo_ReadTableIndexRange( uint8_t node_id, range_t *
  * @param crc                           Pointer to variable where CRC is read to.
  * @return                              Success status of SDO read request.
  *   @retval OK                         Data successfully read.
+ *   @retval TIMEOUT                    A timeout occurred during connection attempt.
  *   @retval SDO_CONNECTION_FAILED      Data could not be read due to SDO connection failure.
  */
 extern error_code_t ParameterSdo_ReadTableCrc( uint8_t node_id, uint32_t * crc );
@@ -100,6 +102,7 @@ extern error_code_t ParameterSdo_ReadTableCrc( uint8_t node_id, uint32_t * crc )
  * @param len                           Length of the provided buffer.
  * @return                              Success status of SDO read request.
  *   @retval OK                         Data successfully read.
+ *   @retval TIMEOUT                    A timeout occurred during connection attempt.
  *   @retval SDO_CONNECTION_FAILED      Data could not be read due to SDO connection failure.
  */
 extern error_code_t ParameterSdo_ReadName( uint8_t node_id, int16_t parameter_index, char * name, uint16_t len );
@@ -116,6 +119,7 @@ extern error_code_t ParameterSdo_ReadName( uint8_t node_id, int16_t parameter_in
  * @param len                           Length of the provided buffer.
  * @return                              Success status of SDO read request.
  *   @retval OK                         Data successfully read.
+ *   @retval TIMEOUT                    A timeout occurred during connection attempt.
  *   @retval SDO_CONNECTION_FAILED      Data could not be read due to SDO connection failure.
  */
 extern error_code_t ParameterSdo_ReadInfo( uint8_t node_id, int16_t parameter_index, char * info, uint16_t len );
@@ -129,6 +133,7 @@ extern error_code_t ParameterSdo_ReadInfo( uint8_t node_id, int16_t parameter_in
  * @param value                         Pointer to variable where value is read to.
  * @return                              Success status of SDO read request.
  *   @retval OK                         Data successfully read.
+ *   @retval TIMEOUT                    A timeout occurred during connection attempt.
  *   @retval SDO_CONNECTION_FAILED      Data could not be read due to SDO connection failure.
  */
 extern error_code_t ParameterSdo_ReadValue( uint8_t node_id, int16_t parameter_index, int32_t * value );
@@ -142,7 +147,9 @@ extern error_code_t ParameterSdo_ReadValue( uint8_t node_id, int16_t parameter_i
  * @param value                         Value to be written to the parameter.
  * @return                              Success status of SDO write request.
  *   @retval OK                         Data successfully written.
+ *   @retval TIMEOUT                    A timeout occurred during connection attempt.
  *   @retval SDO_CONNECTION_FAILED      Data could not be written due to SDO connection failure.
+ *   @retval any-other-value            Error that occurred on the remote side
  */
 extern error_code_t ParameterSdo_WriteValue( uint8_t node_id, int16_t parameter_index, int32_t value );
 
@@ -157,9 +164,25 @@ extern error_code_t ParameterSdo_WriteValue( uint8_t node_id, int16_t parameter_
  * @param parameter_data                Pointer to parameter data structure where data is read to.
  * @return                              Success status of SDO read request.
  *   @retval OK                         Data successfully read.
+ *   @retval TIMEOUT                    A timeout occurred during connection attempt.
  *   @retval SDO_CONNECTION_FAILED      Data could not be read due to SDO connection failure.
  */
 extern error_code_t ParameterSdo_ReadTableEntry( uint8_t node_id, int16_t parameter_index, parameter_data_t * parameter_data );
+
+
+/**
+ * This function only reads remote node's properties consisting of
+ * unit, representation, flags.
+ *
+ * @param node_id                       ID of node to be requested.
+ * @param parameter_index               Index of the parameter which info has to be read.
+ * @param parameter_data                Pointer to parameter data structure where data is read to.
+ * @return
+ *   @retval OK                         Data successfully read.
+ *   @retval TIMEOUT                    A timeout occurred during connection attempt.
+ *   @retval SDO_CONNECTION_FAILED      Data could not be read due to SDO connection failure.
+ */
+extern error_code_t ParameterSdo_ReadProperty( uint8_t node_id, int16_t parameter_index, parameter_data_t * parameter_data );
 
 
 /**

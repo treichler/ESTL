@@ -51,6 +51,8 @@ const char * Error_GetMessage(error_code_t error)
     [TIMEOUT                      - UNKNOWN_ERROR] = "Timeout",
     [RESOURCE_BUSY                - UNKNOWN_ERROR] = "Resource busy",
     [BUFFER_TOO_SMALL             - UNKNOWN_ERROR] = "Buffer too small",
+    [COMMUNICATION_ERROR          - UNKNOWN_ERROR] = "Communication error",
+    [DECRYPTION_ERROR             - UNKNOWN_ERROR] = "Decryption error",
 
     [FLASH_WRITE_ERROR            - UNKNOWN_ERROR] = "FLASH write error",
     [FLASH_ERASE_ERROR            - UNKNOWN_ERROR] = "FLASH erase error",

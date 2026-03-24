@@ -80,8 +80,8 @@ enum {
 #endif
 
 #define PARAMETER_TABLE_PROPERTY_INDEX  (PARAMETER_INDEX_LIMIT_MIN - 1)
-#define SDO_INDEX(a)    (ParameterSdo_Data.sdo_start_index + (((a - PARAMETER_TABLE_PROPERTY_INDEX) >> (8 - PARAMETER_SDO_BITS_FOR_PROPERTIES)) & 0x7FF))
-#define SDO_SUBINDEX(a) (((a - PARAMETER_TABLE_PROPERTY_INDEX) << PARAMETER_SDO_BITS_FOR_PROPERTIES) & 0xF8)
+#define SDO_INDEX(a)    (ParameterSdo_Data.sdo_start_index + (((a - PARAMETER_TABLE_PROPERTY_INDEX) & 0x3FF) >> (8 - PARAMETER_SDO_BITS_FOR_PROPERTIES)))
+#define SDO_SUBINDEX(a) (((a - PARAMETER_TABLE_PROPERTY_INDEX) << PARAMETER_SDO_BITS_FOR_PROPERTIES) & 0xFF)
 
 
 struct {
@@ -202,6 +202,18 @@ error_code_t ParameterSdo_ReadTableEntry( uint8_t node_id, int16_t parameter_ind
   parameter_data->maximum = (int32_t)temp;
 
   return OK;
+}
+
+
+error_code_t ParameterSdo_ReadProperty( uint8_t node_id, int16_t parameter_index, parameter_data_t * parameter_data )
+{
+  int32_t temp;
+  Sdo_ExpRead( node_id, SDO_INDEX(parameter_index), SDO_SUBINDEX(parameter_index) + OFFSET_PARAM_PROPERTY, &temp, 0 );
+  while( Sdo_ReqIsBusy() );
+  parameter_data->flags = (uint16_t)temp;
+  parameter_data->repr = (repr_t)(temp >> 16);
+  parameter_data->unit = (unit_t)(temp >> 24);
+  return Sdo_ReqFinishStatus();
 }
 
 
