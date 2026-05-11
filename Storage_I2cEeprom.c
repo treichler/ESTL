@@ -102,7 +102,7 @@ error_code_t StorageI2cEeprom_NvMemWrite(uint16_t addr, const uint8_t *data, uin
     retries = EEPROM_NR_OF_WRITE_RETRIES;
     while (retries --)
     {
-      i2c_write_status = Target_I2cWrite(eeprom_bus_write_address, tx_buffer, (I2C_EEPROM_NR_OF_ADDR_BYTES + current_max_len));
+      i2c_write_status = Target_I2cWrite(eeprom_bus_write_address, tx_buffer, (I2C_EEPROM_NR_OF_ADDR_BYTES + current_max_len), TRUE);
       if (OK == i2c_write_status)
         break;
     }
@@ -146,10 +146,10 @@ error_code_t StorageI2cEeprom_NvMemRead(uint16_t addr, uint8_t *data, uint16_t s
     eeprom_bus_write_address = EEPROM_BUS_WRITE_ADDRESS | ((block_addr >> 7) & 0x0E);
     eeprom_bus_read_address  = EEPROM_BUS_READ_ADDRESS | ((block_addr >> 7) & 0x0E);
 #endif
-    i2c_access_status = Target_I2cWrite(eeprom_bus_write_address, mem_addr, sizeof(mem_addr));
+    i2c_access_status = Target_I2cWrite(eeprom_bus_write_address, mem_addr, sizeof(mem_addr), FALSE);
     if (OK != i2c_access_status)
       return i2c_access_status;
-    i2c_access_status = Target_I2cRead(eeprom_bus_read_address, data, current_max_len);
+    i2c_access_status = Target_I2cRead(eeprom_bus_read_address, data, current_max_len, TRUE);
     if (OK != i2c_access_status)
       return i2c_access_status;
 

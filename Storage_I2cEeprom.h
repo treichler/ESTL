@@ -39,11 +39,42 @@
  *
  * This module provides functionality to access an externally connected
  * I2C EEprom. Since this module relies on externally connected hardware
- * and MCU's periphery, dedicated I2C-functions have to be provided in
- * Target.c respectively Target.h, namely:
- *   - Target_I2cRead()
- *   - Target_I2cWrite()
+ * and MCU's periphery, the dedicated I2C-functions Target_I2cRead() and
+ * Target_I2cWrite() have to be provided in Target.c respectively Target.h.
+ * The code example below shows how the structure of these functions
+ * should look like:
+ *
+ * @code
+ *   error_code_t Target_I2cRead(uint8_t addr, uint8_t *data, uint16_t len, bool_t stop)
+ *   {
+ *     if( stop )
+ *     {
+ *       // Finalize I2C-read with stop-condition
+ *     }
+ *     else
+ *     {
+ *       // Finalize I2C-read without stop-condition, this keeps the bus prepared
+ *       // for a RESTART-condition, which is issued with the next Target_I2cRead()
+ *       // respectively Target_I2cWrite().
+ *     }
+ *   }
+ *
+ *   error_code_t Target_I2cWrite(uint8_t addr, const uint8_t *data, uint16_t len, bool_t stop)
+ *   {
+ *     if( stop )
+ *     {
+ *       // Finalize I2C-write with stop-condition
+ *     }
+ *     else
+ *     {
+ *       // Finalize I2C-write without stop-condition, this keeps the bus prepared
+ *       // for a RESTART-condition, which is issued with the next Target_I2cRead()
+ *       // respectively Target_I2cWrite().
+ *     }
+ *   }
+ *
  * @{
+ * @endcode
  */
 
 #if( ESTL_STORAGE_I2CEEPROM == ESTL_STORAGE_I2CEEPROM_24LC64 )

@@ -35,8 +35,8 @@ Hardware dependent functions are expected to be declared in a file called `Targe
 The relevant functions are all prefixed with `Target_` as an example can be seen below:
 
 ```
-error_code_t Target_I2cWrite(uint8_t addr, uint8_t *data, uint16_t len);
-error_code_t Target_I2cRead(uint8_t addr, uint8_t *data, uint16_t len);
+error_code_t Target_I2cWrite(uint8_t addr, const uint8_t *data, uint16_t len, bool_t stop);
+error_code_t Target_I2cRead(uint8_t addr, uint8_t *data, uint16_t len, bool_t stop)
 ```
 
 Application specific stuff
