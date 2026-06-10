@@ -177,19 +177,34 @@ enum {
  * To explicitly prohibit read-access additionally the @ref HIDE flag has to be set.
  * @{
  */
-#define LEVEL_MASK      (0x07)  //!< Access level mask, needs to be aligned with LSB
-#define LEVEL_0         (0x00)  //!< Accessible for all
-#define LEVEL_1         (0x01)  //!< User access
-#define LEVEL_2         (0x02)  //!< Service access
-#define LEVEL_3         (0x03)  //!< Production access
-#define LEVEL_4         (0x04)  //!< Developer access
-#define HIDE            (0x08)  //!< Hide the parameter in case of too low access level
-#define R_O             (0x00)  //!< Read only parameter access
-#define R_W             (0x10)  //!< Read and write parameter access
-#define NVMEM           (0x20)  //!< Store parameter in non-volatile memory
-#define INFO            (0x40)  //!< Show parameter information in help context
-#define PERS            (0x80)  //!< Persistent parameter, always try to load its non-volatile data
+#define LEVEL_Pos      (0)      //!< Location of access level bits within parameter flags
+#define LEVEL_Msk      (0x007)  //!< Access level mask
+#define LEVEL_0        (0x000)  //!< Accessible for all
+#define LEVEL_1        (0x001)  //!< User access
+#define LEVEL_2        (0x002)  //!< Service access
+#define LEVEL_3        (0x003)  //!< Production access
+#define LEVEL_4        (0x004)  //!< Developer access
+#define HIDE           (0x008)  //!< Hide the parameter in case of too low access level
+
+#define NVMEM_Pos      (4)      //!< Location of NV storage group bits within parameter flags
+#define NVMEM_Msk      (0x070)  //!< Non-volatile memory storage-group mask
+#define NVMEM_1        (0x010)  //!< NV storage group 1: preferred for general purpose settings
+#define NVMEM_2        (0x020)  //!< NV storage group 2:
+#define NVMEM_3        (0x030)  //!< NV storage group 3:
+#define NVMEM_4        (0x040)  //!< NV storage group 4:
+#define NVMEM_5        (0x050)  //!< NV storage group 5:
+#define NVMEM_6        (0x060)  //!< NV storage group 6:
+#define NVMEM_7        (0x070)  //!< NV storage group 7: Preferred for production settings
+
+#define R_O            (0x000)  //!< Read only parameter access
+#define R_W            (0x080)  //!< Read and write parameter access
+#define INFO           (0x100)  //!< Show parameter information in help context
+#define PERS           (0x200)  //!< Persistent parameter, always try to load its non-volatile data
 /** @} */
+
+
+#define PARAMETER_SAVE_GROUP_Msk        ((1 << (NVMEM_Msk >> NVMEM_Pos)) - 1)
+#define PARAMETER_SAVE_ALL_GROUPS       PARAMETER_SAVE_GROUP_Msk
 
 
 /**
@@ -410,11 +425,14 @@ error_code_t Parameter_ReadData(int16_t parameter_index, parameter_data_t * para
 
 /**
  * Save the current parameter values to non-volatile memory.
+ * Furthermore the storage-group to be saved is selected via bit-mask.
  *
- * @return        Error code depending on what went wrong during saving.
- *   @retval  OK  On success.
+ * @param     group_mask
+ * @return                                 Error code depending on what went wrong during saving.
+ *   @retval  OK                           On success.
+ *   @retval  PARAMETER_SAVE_ALL_REQUIRED  In case previous nv-data structure does not match current one.
  */
-error_code_t Parameter_Save(void);
+error_code_t Parameter_Save( uint8_t group_mask );
 
 
 /**

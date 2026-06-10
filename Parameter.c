@@ -188,7 +188,7 @@
 struct {
   error_code_t  init_error;                                         //!<  Parameter initialization error code
   error_code_t  task_error;                                         //!<  Parameter idle-task error code
-  bool_t        save_image;                                         //!<  Flag to save image in storage (non-volatile)
+  uint8_t       save_group_mask;                                    //!<  Storage group(s) to be saved
   int8_t        access_level;                                       //!<  Currently activated parameter access level
   uint32_t      access_secret;                                      //!<  Current access level's secret key
   uint32_t      table_crc;                                          //!<  Checksum over the whole parameter table
@@ -215,7 +215,7 @@ const uint32_t access_secrets[] = {USER_ACCESS_SECRET, SERVICE_ACCESS_SECRET, PR
  */
 bool_t Parameter_EntryIsAccessible(const parameter_table_entry_t * parameter_table_entry)
 {
-  return( Parameter_Data.access_level >= (parameter_table_entry->flags & LEVEL_MASK) );
+  return( Parameter_Data.access_level >= ((parameter_table_entry->flags & LEVEL_Msk) >> LEVEL_Pos) );
 }
 
 
@@ -253,7 +253,7 @@ error_code_t Parameter_SysKeyFunction(function_call_t parameter_function, int32_
   if( parameter_function == FUNCTION_SAVE )
   {
     // only save developer access key
-    if( (LEVEL_4 & LEVEL_MASK) > Parameter_Data.access_level )
+    if( ((LEVEL_4 & LEVEL_Msk) >> LEVEL_Pos) > Parameter_Data.access_level )
       *value = 0;
     else
       *value = (int32_t)Parameter_Data.access_secret;
@@ -294,12 +294,13 @@ error_code_t Parameter_SysInfoFunction(function_call_t parameter_function, int32
 /**
  * Help text for Parameter_SysCmdFunction()
  */
-#define SYSTEM_CMD_HELP_STR     ("System commands:\n"                \
-                                 "1: Save parameter\n"               \
-                                 "2: Initialize parameter\n"         \
-                                 "3: Load default parameter\n"       \
-                                 "4: Parameter init status\n"        \
-                                 "5: Parameter task status\n"        \
+#define SYSTEM_CMD_HELP_STR     ("System commands:\n"                            \
+                                 "1: Save parameter\n"                           \
+                                 "2: Initialize parameter\n"                     \
+                                 "3: Load default parameter\n"                   \
+                                 "4: Parameter init status\n"                    \
+                                 "5: Parameter task status\n"                    \
+                                 "0x100..0x17F: Save parameter group (masked)\n" \
                                  "Read-back value represents table CRC")
 
 /**
@@ -309,7 +310,9 @@ error_code_t Parameter_SysInfoFunction(function_call_t parameter_function, int32
  *   - 2: Initialize parameter, respectively load from non-volatile memory
  *   - 3: Load default/nominal parameter values. Requires at least production access level
  *   - 4: Return error code of parameter initialization status
- *   - 4: Return error code of parameter idle task
+ *   - 5: Return error code of parameter idle task
+ *   - 0x100..0x17F: Save parameter group(s) according to bit-mask
+ *
  * On PARAMETER_READ the parameter table's checksum is returned via value.
  *
  * @param     parameter_function     How is this function called.
@@ -322,30 +325,41 @@ error_code_t Parameter_SysCmdFunction(function_call_t parameter_function, int32_
   error_code_t error_code = OK;
   if( parameter_function == FUNCTION_WRITE )
   {
-    switch( *value )
+    if( 1 == *value )
     {
-      case 1:
-        error_code = Parameter_Save();
-        break;
-      case 2:
-        error_code = Parameter_Init( TRUE );
-        break;
-      case 3:
-        if( Parameter_Data.access_level >= (LEVEL_3 & LEVEL_MASK) )
-          error_code = Parameter_Init( FALSE );
-        else
-          error_code = PARAMETER_ACCESS_DENIED;
-        break;
-      case 4:
-        error_code = Parameter_Data.init_error;
-        break;
-      case 5:
-        error_code = Parameter_Data.task_error;
-        break;
-      default:
-        error_code = VALUE_INVALID;
-        break;
+      // save whole parameter set
+      error_code = Parameter_Save( PARAMETER_SAVE_ALL_GROUPS );
     }
+    else if( 2 == *value )
+    {
+      // initialize parameter
+      error_code = Parameter_Init( TRUE );
+    }
+    else if( 3 == *value )
+    {
+      // load default parameter
+      if( Parameter_Data.access_level >= ((LEVEL_3 & LEVEL_Msk) >> LEVEL_Pos) )
+        error_code = Parameter_Init( FALSE );
+      else
+        error_code = PARAMETER_ACCESS_DENIED;
+    }
+    else if( 4 == *value )
+    {
+      // parameter init status
+      error_code = Parameter_Data.init_error;
+    }
+    else if( 4 == *value )
+    {
+      // parameter task status
+      error_code = Parameter_Data.task_error;
+    }
+    else if( (0x100 <= *value) && (*value <= 0x17F) )
+    {
+      // save storage group according to bit-mask
+      error_code = Parameter_Save( PARAMETER_SAVE_GROUP_Msk & *value );
+    }
+    else
+      error_code = VALUE_INVALID;
   }
   else if( parameter_function == FUNCTION_READ )
     *value = Parameter_Data.table_crc;
@@ -385,25 +399,25 @@ void Parameter_SetSerialNumberCallback( error_code_t (* serialNumberParFctn)(fun
  * System Parameter Table
  */
 const parameter_table_entry_t System_Parameter_table[] = {
-  //                           name         unit            representation       control flags           minimum     nominal         maximum                 function pointer   information/help
-  [ESTL_PARAM_SYS_INFO]    = {"sys-info",   UNIT_NONE,            REPR_HEX,  LEVEL_0|R_O|NVMEM,        INT32_MIN, PAR_REV_NR,      INT32_MAX,      &Parameter_SysInfoFunction,  SERVICE_HELP_STR},
-  [ESTL_PARAM_SYS_KEY]     = {"sys-key",    UNIT_NONE,            REPR_DEC,  LEVEL_0|R_W|NVMEM,        INT32_MIN,          0,      INT32_MAX,       &Parameter_SysKeyFunction,  HELP_TEXT("Parameter access key. The current value represents the access level.")},
-  [ESTL_PARAM_SYS_CMD]     = {"sys-cmd",    UNIT_NONE,            REPR_HEX,  LEVEL_0|R_W,              INT32_MIN,          0,      INT32_MAX,       &Parameter_SysCmdFunction,  HELP_TEXT(SYSTEM_CMD_HELP_STR)},
-  [ESTL_PARAM_SN]          = {"SN",         UNIT_NONE,         REPR_HEX_08,  LEVEL_3|R_W|NVMEM|PERS,   INT32_MIN,          0,      INT32_MAX, &Parameter_SerialNumberFunction,  HELP_TEXT("Serial number")},
+  //                           name         unit            representation       control flags             minimum     nominal         maximum                 function pointer   information/help
+  [ESTL_PARAM_SYS_INFO]    = {"sys-info",   UNIT_NONE,            REPR_HEX,  LEVEL_0|R_O|NVMEM_7,        INT32_MIN, PAR_REV_NR,      INT32_MAX,      &Parameter_SysInfoFunction,  SERVICE_HELP_STR},
+  [ESTL_PARAM_SYS_KEY]     = {"sys-key",    UNIT_NONE,            REPR_DEC,  LEVEL_0|R_W|NVMEM_7,        INT32_MIN,          0,      INT32_MAX,       &Parameter_SysKeyFunction,  HELP_TEXT("Parameter access key. The current value represents the access level.")},
+  [ESTL_PARAM_SYS_CMD]     = {"sys-cmd",    UNIT_NONE,            REPR_HEX,  LEVEL_0|R_W,                INT32_MIN,          0,      INT32_MAX,       &Parameter_SysCmdFunction,  HELP_TEXT(SYSTEM_CMD_HELP_STR)},
+  [ESTL_PARAM_SN]          = {"SN",         UNIT_NONE,         REPR_HEX_08,  LEVEL_3|R_W|NVMEM_7|PERS,   INT32_MIN,          0,      INT32_MAX, &Parameter_SerialNumberFunction,  HELP_TEXT("Serial number")},
 #ifdef ESTL_ENABLE_RF
   // radio frequency
-  [ESTL_PARAM_RF_FREQ]     = {"RF-freq",    UNIT_MEG_HERTZ,     REPR_Q15_4,  LEVEL_1|R_W|NVMEM,       Q15(863.0), Q15(868.0),     Q15(870.0),    &RfApp_FreqParameterFunction,  HELP_TEXT("Transmitter frequency.")},
-  [ESTL_PARAM_RF_NODEID]   = {"RF-nodeID",  UNIT_NONE,            REPR_DEC,  LEVEL_1|R_W|NVMEM,                0,          0,            254,  &RfApp_NodeIdParameterFunction,  HELP_TEXT("Node ID")},
-  [ESTL_PARAM_RF_NETID]    = {"RF-netID",   UNIT_NONE,            REPR_DEC,  LEVEL_1|R_W|NVMEM,                0,          0,            255,   &RfApp_NetIdParameterFunction,  HELP_TEXT("Network ID")},
-  [ESTL_PARAM_RF_AESKEY_1] = {"RF-AES1",    UNIT_NONE,            REPR_HEX,  LEVEL_1|R_W|NVMEM,        INT32_MIN,          0,      INT32_MAX,     &RfApp_AesParameterFunction,  HELP_TEXT("AES key for RF-link. Encryption is disabled if all AES-keys are 0.")},
-  [ESTL_PARAM_RF_AESKEY_2] = {"RF-AES2",    UNIT_NONE,            REPR_HEX,  LEVEL_1|R_W|NVMEM,        INT32_MIN,          0,      INT32_MAX,     &RfApp_AesParameterFunction,  HELP_TEXT("AES key for RF-link. Encryption is disabled if all AES-keys are 0.")},
-  [ESTL_PARAM_RF_AESKEY_3] = {"RF-AES3",    UNIT_NONE,            REPR_HEX,  LEVEL_1|R_W|NVMEM,        INT32_MIN,          0,      INT32_MAX,     &RfApp_AesParameterFunction,  HELP_TEXT("AES key for RF-link. Encryption is disabled if all AES-keys are 0.")},
-  [ESTL_PARAM_RF_AESKEY_4] = {"RF-AES4",    UNIT_NONE,            REPR_HEX,  LEVEL_1|R_W|NVMEM,        INT32_MIN,          0,      INT32_MAX,     &RfApp_AesParameterFunction,  HELP_TEXT("AES key for RF-link. Encryption is disabled if all AES-keys are 0.")},
+  [ESTL_PARAM_RF_FREQ]     = {"RF-freq",    UNIT_MEG_HERTZ,     REPR_Q15_4,  LEVEL_1|R_W|NVMEM_1,       Q15(863.0), Q15(868.0),     Q15(870.0),    &RfApp_FreqParameterFunction,  HELP_TEXT("Transmitter frequency.")},
+  [ESTL_PARAM_RF_NODEID]   = {"RF-nodeID",  UNIT_NONE,            REPR_DEC,  LEVEL_1|R_W|NVMEM_1,                0,          0,            254,  &RfApp_NodeIdParameterFunction,  HELP_TEXT("Node ID")},
+  [ESTL_PARAM_RF_NETID]    = {"RF-netID",   UNIT_NONE,            REPR_DEC,  LEVEL_1|R_W|NVMEM_1,                0,          0,            255,   &RfApp_NetIdParameterFunction,  HELP_TEXT("Network ID")},
+  [ESTL_PARAM_RF_AESKEY_1] = {"RF-AES1",    UNIT_NONE,            REPR_HEX,  LEVEL_1|R_W|NVMEM_1,        INT32_MIN,          0,      INT32_MAX,     &RfApp_AesParameterFunction,  HELP_TEXT("AES key for RF-link. Encryption is disabled if all AES-keys are 0.")},
+  [ESTL_PARAM_RF_AESKEY_2] = {"RF-AES2",    UNIT_NONE,            REPR_HEX,  LEVEL_1|R_W|NVMEM_1,        INT32_MIN,          0,      INT32_MAX,     &RfApp_AesParameterFunction,  HELP_TEXT("AES key for RF-link. Encryption is disabled if all AES-keys are 0.")},
+  [ESTL_PARAM_RF_AESKEY_3] = {"RF-AES3",    UNIT_NONE,            REPR_HEX,  LEVEL_1|R_W|NVMEM_1,        INT32_MIN,          0,      INT32_MAX,     &RfApp_AesParameterFunction,  HELP_TEXT("AES key for RF-link. Encryption is disabled if all AES-keys are 0.")},
+  [ESTL_PARAM_RF_AESKEY_4] = {"RF-AES4",    UNIT_NONE,            REPR_HEX,  LEVEL_1|R_W|NVMEM_1,        INT32_MIN,          0,      INT32_MAX,     &RfApp_AesParameterFunction,  HELP_TEXT("AES key for RF-link. Encryption is disabled if all AES-keys are 0.")},
 #endif
 #ifdef ESTL_ENABLE_TERMINAL_REMOTE_PARAMETER
   // remote parameter
-  [ESTL_PARAM_P_SDO_INDEX] = {"sdo-index",  UNIT_NONE,         REPR_HEX_04,  LEVEL_0|R_W|NVMEM|INFO,   P_SDO_MIN,  P_SDO_MAX,      P_SDO_MAX,  &ParameterSdo_SdoIndexParaFunc,  HELP_TEXT("SDO start index of remote parameter")},
-  [ESTL_PARAM_P_DAQ_MASK]  = {"daq-mask",   UNIT_NONE,         REPR_HEX_02,  LEVEL_0|R_W|NVMEM|INFO,           0,       0x7F,           0x7F,      &ScopePdo_NodeMaskParaFunc,  HELP_TEXT("Bit-mask to select which nodes DAQ to be printed")},
+  [ESTL_PARAM_P_SDO_INDEX] = {"sdo-index",  UNIT_NONE,         REPR_HEX_04,  LEVEL_0|R_W|NVMEM_1|INFO,   P_SDO_MIN,  P_SDO_MAX,      P_SDO_MAX,  &ParameterSdo_SdoIndexParaFunc,  HELP_TEXT("SDO start index of remote parameter")},
+  [ESTL_PARAM_P_DAQ_MASK]  = {"daq-mask",   UNIT_NONE,         REPR_HEX_02,  LEVEL_0|R_W|NVMEM_1|INFO,           0,       0x7F,           0x7F,      &ScopePdo_NodeMaskParaFunc,  HELP_TEXT("Bit-mask to select which nodes DAQ to be printed")},
 #endif
 #ifdef ESTL_ENABLE_DEBUG
   // debug
@@ -444,7 +458,7 @@ int32_t Parameter_array[SYSTEM_PARAMETER_TABLE_NR_OF_ENTRIES + NR_OF_PARAMETER_T
 
 bool_t Parameter_CurrentAccessLevelIsDeveloper(void)
 {
-  return (LEVEL_4 & LEVEL_MASK) == Parameter_Data.access_level;
+  return ((LEVEL_4 & LEVEL_Msk) >> LEVEL_Pos) == Parameter_Data.access_level;
 }
 
 
@@ -531,7 +545,7 @@ bool_t Parameter_IsWritable(int16_t parameter_index)
 
 error_code_t Parameter_WriteValue(int16_t parameter_index, int32_t value)
 {
-  if( Parameter_Data.save_image)
+  if( Parameter_Data.save_group_mask)
     return RESOURCE_BUSY;
 
   const parameter_table_entry_t * parameter_table_entry = 0;
@@ -732,7 +746,7 @@ error_code_t Parameter_Init( bool_t load_nv_data )
 
     // check if parameter entry needs to be loaded with non-volatile memory data
     if( (OK == nv_data_status) &&
-        (parameter_table_entry->flags & NVMEM) &&
+        (parameter_table_entry->flags & NVMEM_Msk) &&
         (load_nv_data || (parameter_table_entry->flags & PERS)) )
     {
       // increase nvmem_index just in case if there is non-volatile data from another minor parameter revision
@@ -804,12 +818,15 @@ error_code_t Parameter_Init( bool_t load_nv_data )
 }
 
 
-error_code_t Parameter_Save(void)
+error_code_t Parameter_Save( uint8_t group_mask )
 {
 #ifdef ESTL_ENABLE_STORAGE
-  if( Parameter_Data.save_image )
+  group_mask &= PARAMETER_SAVE_GROUP_Msk;
+  if( Parameter_Data.save_group_mask )
     return RESOURCE_BUSY;
-  Parameter_Data.save_image = TRUE;
+  if( (OK != Parameter_Data.init_error) && (PARAMETER_SAVE_ALL_GROUPS != group_mask) )
+    return PARAMETER_SAVE_ALL_REQUIRED;
+  Parameter_Data.save_group_mask = group_mask;
   return OK;
 #else
   return OK;
@@ -820,13 +837,30 @@ error_code_t Parameter_Save(void)
 void Parameter_Task( void )
 {
 #ifdef ESTL_ENABLE_STORAGE
-  if( Parameter_Data.save_image )
+  if( Parameter_Data.save_group_mask )
   {
     nv_parameter_entry_t nv_parameter_entry[SYSTEM_PARAMETER_TABLE_NR_OF_ENTRIES + NR_OF_PARAMETER_TABLE_ENTRIES];
-    const parameter_table_entry_t * parameter_table_entry = 0;
+    const parameter_table_entry_t * parameter_table_entry = NULL;
     int16_t i;
     uint16_t nvmem_index = 0;
     error_code_t error;
+    bool_t save_storage_group = FALSE;
+
+    // check if storage group requested AND previous parameter initialization is valid
+    if( (PARAMETER_SAVE_ALL_GROUPS != Parameter_Data.save_group_mask) && (OK == Parameter_Data.init_error) )
+    {
+      // preload parameter image, only storage-group(s) related data will be written in-place
+      int32_t storage_size;
+      storage_size = Storage_Read(STORAGE_PARAMETER_IMAGE, nv_parameter_entry, sizeof(nv_parameter_entry));
+      if( 0 <= storage_size )
+      {
+        // storage image matches parameter-table
+        save_storage_group = TRUE;
+      }
+    }
+
+    // TODO  distinguish between factory and application parameters,
+    //       different storage blocks could be used for this purpose.
 
     for( i = -(int16_t)SYSTEM_PARAMETER_TABLE_NR_OF_ENTRIES; i < NR_OF_PARAMETER_TABLE_ENTRIES; i++ )
     {
@@ -838,18 +872,22 @@ void Parameter_Task( void )
       }
 
       // copy data from parameter table to nv-memory structure
-      if( parameter_table_entry->flags & NVMEM )
+      uint8_t storage_group_mask = (1 << ((parameter_table_entry->flags & NVMEM_Msk) >> NVMEM_Pos)) >> 1;
+      if( storage_group_mask)
       {
-        if( parameter_table_entry->parameterFunction )
-          parameter_table_entry->parameterFunction( FUNCTION_SAVE, &(Parameter_array[SYSTEM_PARAMETER_TABLE_NR_OF_ENTRIES + i]) );
-        nv_parameter_entry[nvmem_index].value = Parameter_array[SYSTEM_PARAMETER_TABLE_NR_OF_ENTRIES + i];
-        nv_parameter_entry[nvmem_index].index = i;
-        nv_parameter_entry[nvmem_index].crc   = Parameter_NvEntryCrc( parameter_table_entry );
+        if( (FALSE == save_storage_group) || (storage_group_mask & Parameter_Data.save_group_mask) )
+        {
+          if( parameter_table_entry->parameterFunction )
+            parameter_table_entry->parameterFunction( FUNCTION_SAVE, &(Parameter_array[SYSTEM_PARAMETER_TABLE_NR_OF_ENTRIES + i]) );
+          nv_parameter_entry[nvmem_index].value = Parameter_array[SYSTEM_PARAMETER_TABLE_NR_OF_ENTRIES + i];
+          nv_parameter_entry[nvmem_index].index = i;
+          nv_parameter_entry[nvmem_index].crc   = Parameter_NvEntryCrc( parameter_table_entry );
+        }
         nvmem_index ++;
       }
     }
     Parameter_Data.task_error = Storage_Write( STORAGE_PARAMETER_IMAGE, (uint8_t*)nv_parameter_entry, nvmem_index * sizeof(nv_parameter_entry_t) );
-    Parameter_Data.save_image = FALSE;
+    Parameter_Data.save_group_mask = 0;
   }
 #endif
 }

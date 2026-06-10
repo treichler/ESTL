@@ -73,6 +73,7 @@ const char * Error_GetMessage(error_code_t error)
     [PARAMETER_CONTENT_CHANGE     - UNKNOWN_ERROR] = "Parameter content change",
     [PARAMETER_REV_MINOR_CHANGE   - UNKNOWN_ERROR] = "Parameter revision minor change",
     [PARAMETER_REV_MAJOR_CHANGE   - UNKNOWN_ERROR] = "Parameter revision major change",
+    [PARAMETER_SAVE_ALL_REQUIRED  - UNKNOWN_ERROR] = "Save all parameter is required",
 
     [DISPLAY_NO_CONTENT           - UNKNOWN_ERROR] = "",
     [DISPLAY_CONTENT_TOO_LONG     - UNKNOWN_ERROR] = "",

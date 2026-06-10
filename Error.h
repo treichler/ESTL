@@ -86,6 +86,7 @@ typedef enum {
   PARAMETER_CONTENT_CHANGE,     //!<  Content has changed due to new or gone non-volatile parameter
   PARAMETER_REV_MINOR_CHANGE,   //!<  Minor revision in parameter image has changed
   PARAMETER_REV_MAJOR_CHANGE,   //!<  Major revision in parameter image has changed
+  PARAMETER_SAVE_ALL_REQUIRED,  //!<  Save whole parameter-set is required before partial saving is possible
 
   DISPLAY_NO_CONTENT,           //!<  There is nothing to be displayed
   DISPLAY_CONTENT_TOO_LONG,     //!<  The content to be displayed is too long

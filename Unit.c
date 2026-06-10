@@ -121,7 +121,8 @@ void Unit_ValueToString(char * str, int str_len, int32_t value, repr_t repr)
       fmt = "%u";
       break;
     case REPR_Q15_0:
-      fmt = "%2.0q";
+      fmt = "%d";
+      value = q15_to_int16( value );
       break;
     case REPR_Q15_1:
       fmt = "%3.1q";
