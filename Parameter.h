@@ -200,6 +200,11 @@ enum {
 #define R_W            (0x080)  //!< Read and write parameter access
 #define INFO           (0x100)  //!< Show parameter information in help context
 #define PERS           (0x200)  //!< Persistent parameter, always try to load its non-volatile data
+
+#define SIZE_I32       (0x000)  //!< Default size - represent parameter as 32 bit integer on binary network protocols (e.g. CANopen)
+#define SIZE_Msk       (0xC00)  //!< Size mask
+#define SIZE_I16       (0x400)  //!< Represent parameter as 16 bit halfword integer
+#define SIZE_I8        (0x800)  //!< Represent parameter as 8 bit byte integer
 /** @} */
 
 
@@ -410,6 +415,16 @@ int32_t Parameter_GetValue(int16_t parameter_index);
  * @return                             The parameter's help text.
  */
 const char * Parameter_GetHelp(int16_t parameter_index);
+
+
+/**
+ * Get a parameter's integer size
+ * This is used when the parameter is accessed over binary network protocols that support halfword and byte sized transfers, e.g. CANopen
+ *
+ * @param       parameter_index        The parameter entry's index.
+ * @return                             The parameter's integer size, or 0 on error.
+ */
+size_t Parameter_GetSize(int16_t parameter_index);
 
 
 /**

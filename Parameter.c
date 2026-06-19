@@ -623,6 +623,40 @@ const char * Parameter_GetHelp(int16_t parameter_index)
 }
 
 
+size_t Parameter_GetSize(int16_t parameter_index)
+{
+  const parameter_table_entry_t * parameter_table_entry = 0;
+  error_code_t error;
+  error = Parameter_GetEntry(&parameter_table_entry, parameter_index);
+  if( OK != error )
+    return 0;
+
+  size_t result = 0;
+
+  switch( parameter_table_entry->flags & SIZE_Msk )
+  {
+    case SIZE_I32:
+    {
+      result = sizeof(int32_t);
+    } break;
+    case SIZE_I16:
+    {
+      result = sizeof(int16_t);
+    } break;
+    case SIZE_I8:
+    {
+      result = sizeof(int8_t);
+    } break;
+    default:
+    {
+      result = 0;
+    } break;
+  }
+
+  return result;
+}
+
+
 error_code_t Parameter_ReadData(int16_t parameter_index, parameter_data_t * parameter_data)
 {
   const parameter_table_entry_t * parameter_table_entry = 0;
