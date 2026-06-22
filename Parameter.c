@@ -348,7 +348,7 @@ error_code_t Parameter_SysCmdFunction(function_call_t parameter_function, int32_
       // parameter init status
       error_code = Parameter_Data.init_error;
     }
-    else if( 4 == *value )
+    else if( 5 == *value )
     {
       // parameter task status
       error_code = Parameter_Data.task_error;

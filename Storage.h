@@ -94,6 +94,7 @@ extern int32_t StorageFlash_Read( storage_id_t index, void *data, int16_t size )
  */
 static inline error_code_t Storage_Init( void )
 {
+#ifdef ESTL_ENABLE_STORAGE
 #if( ESTL_STORAGE_HARDWARE == ESTL_STORAGE_HARDWARE_FAKE_NV_MEMORY )
   return StorageEeprom_Init();
 #elif( ESTL_STORAGE_HARDWARE == ESTL_STORAGE_HARDWARE_I2CEEPROM )
@@ -104,6 +105,9 @@ static inline error_code_t Storage_Init( void )
   return StorageFlash_Init();
 #else
   #error "Unknown ESTL_STORAGE_HARDWARE"
+#endif
+#else
+  return FUNCTION_UNAVAILABLE;
 #endif
 }
 
@@ -118,6 +122,7 @@ static inline error_code_t Storage_Init( void )
  */
 static inline error_code_t Storage_Write( storage_id_t index, const void *data, int16_t size )
 {
+#ifdef ESTL_ENABLE_STORAGE
 #if( ESTL_STORAGE_HARDWARE == ESTL_STORAGE_HARDWARE_FAKE_NV_MEMORY )
   return StorageEeprom_Write( index, data, size );
 #elif( ESTL_STORAGE_HARDWARE == ESTL_STORAGE_HARDWARE_I2CEEPROM )
@@ -126,6 +131,9 @@ static inline error_code_t Storage_Write( storage_id_t index, const void *data, 
   return StorageEepromAlternate_Write( index, data, size );
 #elif( ESTL_STORAGE_HARDWARE == ESTL_STORAGE_HARDWARE_FLASH )
   return StorageFlash_Write( index, data, size );
+#endif
+#else
+  return FUNCTION_UNAVAILABLE;
 #endif
 }
 
@@ -140,6 +148,7 @@ static inline error_code_t Storage_Write( storage_id_t index, const void *data, 
  */
 static inline int32_t Storage_Read( storage_id_t index, void *data, int16_t size )
 {
+#ifdef ESTL_ENABLE_STORAGE
 #if( ESTL_STORAGE_HARDWARE == ESTL_STORAGE_HARDWARE_FAKE_NV_MEMORY )
   return StorageEeprom_Read( index, data, size );
 #elif( ESTL_STORAGE_HARDWARE == ESTL_STORAGE_HARDWARE_I2CEEPROM )
@@ -148,6 +157,9 @@ static inline int32_t Storage_Read( storage_id_t index, void *data, int16_t size
   return StorageEepromAlternate_Read( index, data, size );
 #elif( ESTL_STORAGE_HARDWARE == ESTL_STORAGE_HARDWARE_FLASH )
   return StorageFlash_Read( index, data, size );
+#endif
+#else
+  return FUNCTION_UNAVAILABLE;
 #endif
 }
 
@@ -169,6 +181,7 @@ static inline int32_t Storage_Read( storage_id_t index, void *data, int16_t size
  */
 static inline error_code_t Storage_GetImageVitality( storage_id_t index )
 {
+#ifdef ESTL_ENABLE_STORAGE
 #if( ESTL_STORAGE_HARDWARE == ESTL_STORAGE_HARDWARE_FAKE_NV_MEMORY )
   return OK;
 #elif( ESTL_STORAGE_HARDWARE == ESTL_STORAGE_HARDWARE_I2CEEPROM )
@@ -177,6 +190,9 @@ static inline error_code_t Storage_GetImageVitality( storage_id_t index )
   return StorageEepromAlternate_GetImageVitality( index );
 #elif( ESTL_STORAGE_HARDWARE == ESTL_STORAGE_HARDWARE_FLASH )
   return OK;
+#endif
+#else
+  return FUNCTION_UNAVAILABLE;
 #endif
 }
 
