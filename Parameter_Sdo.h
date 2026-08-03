@@ -213,6 +213,33 @@ extern uint8_t ParameterSdo_CallbackSdoReq( uint8_t length_req, uint8_t *req_ptr
 
 
 /**
+ * Finds the corresponding parameter table entry, based on an Object Dictionary (SDO) index/subindex pair. (see ParameterSdo_CallbackSdoReq)
+ *
+ * @param index         Object dictionary index
+ * @param subindex      Object dictionary sub-index
+ * @param data          Pointer to an integer-sized buffer. Will contain the data directly for entries <= 4 bytes,
+ *                      or a pointer to any data longer than 4 bytes. Check result of the "size" argument.
+ * @param size          Pointer to an integer containing the parameter's size in bytes.
+ * @return
+ *   @retval    0       no corresponding entry found or access type unknown
+ *   @retval    1       corresponding entry was found and retrieved
+ */
+extern uint8_t ParameterSdo_GetParameterEntry( uint16_t index, uint8_t subindex, uint32_t *data, size_t *size );
+
+
+/**
+ * Sets a corresponding parameter table entry, based on an Object Dictionary (SDO) index/subindex pair. (see ParameterSdo_CallbackSdoReq)
+ *
+ * @param index         Object dictionary index
+ * @param subindex      Object dictionary sub-index
+ * @param value         Parameter value to set. All 32 bits are used always.
+ * @return
+ *   @retval    0       no corresponding entry found or access type unknown
+ *   @retval    1       corresponding entry was found and set
+ */
+extern uint8_t ParameterSdo_WriteParameterEntry( uint16_t index, uint8_t subindex, uint32_t value );
+
+/**
  * @} end of PARAMETER_CAN_OPEN
  */
 

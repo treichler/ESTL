@@ -440,3 +440,134 @@ uint8_t ParameterSdo_CallbackSdoReq( uint8_t length_req, uint8_t *req_ptr, uint8
 }
 
 
+uint8_t ParameterSdo_GetParameterEntry( uint16_t index, uint8_t subindex, uint32_t *data, size_t *size )
+{
+  int16_t  parameter_index = (int16_t)((((index - CANOPEN_PARAMETER_SDO_START_INDEX) << 5) | (subindex >> 3)) + PARAMETER_TABLE_PROPERTY_INDEX );
+  uint8_t  parameter_request = subindex & 0x07;
+
+
+  if( (index >= CANOPEN_PARAMETER_SDO_START_INDEX) && (index <= CANOPEN_PARAMETER_SDO_LAST_ADDRESS) )
+  {
+    // request to parameter
+    uint32_t payload;
+    uint8_t len;
+    range_t index_range;
+
+    // check if request for table properties or parameter properties
+    if( PARAMETER_TABLE_PROPERTY_INDEX == parameter_index )
+    {
+      // request for table properties
+      switch( parameter_request )
+      {
+        case TABLE_PROPERTY_INDEX_RANGE:
+          index_range = Parameter_GetIndexRange();
+          payload = (index_range.max << 16) | (index_range.min & 0xFFFF);
+          len = sizeof(index_range);
+          break;
+
+        case TABLE_PROPERTY_TABLE_CRC:
+          payload = Parameter_GetTableCrc();
+          len = sizeof(payload);
+          break;
+
+        default:
+          return CAN_SDOREQ_NOTHANDLED;
+          break;
+      }
+    }
+    else
+    {
+      // request for parameter properties
+      parameter_data_t parameter_data;
+      error_code_t error = Parameter_ReadData(parameter_index, &parameter_data);
+      if( ! ((OK == error) || (PARAMETER_HIDDEN == error)) )
+        return CAN_SDOREQ_NOTHANDLED;
+
+      if( (OFFSET_PARAM_NAME == parameter_request) || (OFFSET_PARAM_INFO == parameter_request) )
+      {
+        if( OFFSET_PARAM_NAME == parameter_request )
+          *data = (uint32_t)parameter_data.name;
+        else
+          *data = (uint32_t)Parameter_GetHelp(parameter_index);
+
+        *size = strlen( (char*)(*data) ) + 1;
+
+        return CAN_SDOREQ_HANDLED_SEND;
+      }
+      else
+      {
+        // expedited read
+        switch( parameter_request )
+        {
+          case OFFSET_PARAM_ACTUAL:
+            payload = Parameter_GetValue(parameter_index);
+            len = sizeof(int32_t);
+            break;
+
+          case OFFSET_PARAM_NOMINAL:
+            payload = parameter_data.nominal;
+            len = sizeof(parameter_data.nominal);
+            break;
+
+          case OFFSET_PARAM_MINIMUM:
+            payload = parameter_data.minimum;
+            len = sizeof(parameter_data.minimum);
+            break;
+
+          case OFFSET_PARAM_MAXIMUM:
+            payload = parameter_data.maximum;
+            len = sizeof(parameter_data.maximum);
+            break;
+
+          case OFFSET_PARAM_PROPERTY:
+            payload = ((parameter_data.unit & 0xFF) << 24) | ((parameter_data.repr & 0xFF) << 16) | (parameter_data.flags & 0xFFFF);
+            len = sizeof(payload);
+            break;
+
+          default:
+            return CAN_SDOREQ_NOTHANDLED;
+            break;
+        }
+      }
+    }
+
+    *data = payload;
+    *size = len;
+
+    return CAN_SDOREQ_HANDLED_SEND;
+  }
+
+  return CAN_SDOREQ_NOTHANDLED;
+}
+
+uint8_t ParameterSdo_WriteParameterEntry( uint16_t index, uint8_t subindex, uint32_t value )
+{
+  int16_t  parameter_index = (int16_t)((((index - CANOPEN_PARAMETER_SDO_START_INDEX) << 5) | (subindex >> 3)) + PARAMETER_TABLE_PROPERTY_INDEX );
+  uint8_t  parameter_request = subindex & 0x07;
+
+  if( (index >= CANOPEN_PARAMETER_SDO_START_INDEX) && (index <= CANOPEN_PARAMETER_SDO_LAST_ADDRESS) && (OFFSET_PARAM_ACTUAL == parameter_request) )
+  {
+    error_code_t error_code = Parameter_WriteValue(parameter_index, value);
+    if( OK == error_code )
+    {
+      return CAN_SDOREQ_HANDLED_SEND;
+    }
+    else
+    {
+      /*
+      resp_ptr[0] = 0x80;
+      // map parameter access error to SDO pseudo abort code
+      resp_ptr[4] = (uint8_t)(0xFF & (error_code >> 0));
+      resp_ptr[5] = (uint8_t)(0xFF & (error_code >> 8));
+      resp_ptr[6] = (PSEUDO_SDO_ABORT_CODE >> 16) & 0xFF;
+      resp_ptr[7] = (PSEUDO_SDO_ABORT_CODE >> 24) & 0xFF;
+      */
+
+      // TODO pseudo abort codes...
+    }
+  }
+
+  return CAN_SDOREQ_NOTHANDLED;
+}
+
+
