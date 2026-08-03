@@ -215,7 +215,7 @@ char Display_DrawChar( char c, const font_t * font, draw_mode_t draw_mode )
   uint16_t width_sum = 0;
   uint16_t font_index;
   uint8_t  font_width;
-  char     special_char;
+//  char     special_char;
 
   // check if character is available
   c = Display_CheckChar( c, font );

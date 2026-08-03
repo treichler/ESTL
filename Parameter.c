@@ -846,6 +846,20 @@ error_code_t Parameter_Init( bool_t load_nv_data )
   else
     Parameter_Data.init_error = init_status;
 #else
+  // copy nominal values to parameter array
+  for( i = -(int16_t)SYSTEM_PARAMETER_TABLE_NR_OF_ENTRIES; i < NR_OF_PARAMETER_TABLE_ENTRIES; i++ )
+  {
+    error_code_t error;
+    error = Parameter_GetEntry(&parameter_table_entry, i);
+    if( OK != error )
+      return error; // fatal error in application's parameter table
+
+    Parameter_array[SYSTEM_PARAMETER_TABLE_NR_OF_ENTRIES + i] = parameter_table_entry->nominal;
+
+    // check if parameter function is available and call it
+    if( parameter_table_entry->parameterFunction != 0 )
+      error = parameter_table_entry->parameterFunction(FUNCTION_INIT, &Parameter_array[SYSTEM_PARAMETER_TABLE_NR_OF_ENTRIES + i]);
+  }
   Parameter_Data.init_error = table_crc_status;
 #endif
   return Parameter_Data.init_error;
