@@ -265,6 +265,28 @@ bool_t Sdo_RxHandler( uint8_t * rx, uint8_t rx_id, uint8_t * resp, uint8_t * res
       *resp_id = Sdo_data.seg_id;
       Sdo_data.resp_in_buffer = 0;
     }
+    else if( ((rx[0] & (7<<5)) == 0x40) && ((rx[0] & (1<<1)) == 0x02) )
+    {
+      // Received reply on initiate command, it contains data immediately as expedited transfer
+      uint8_t length_complement = ((rx[0] & (1<<0)) == 0x01) ? ((rx[0]>>2) & 0x03) : 0u; // length indication only valid when 's' bit is set
+      Sdo_data.resp_in_buffer = 0;
+
+      // Receive data
+      for( i = 0; i < (4 - length_complement); i++ )
+      {
+        if( Sdo_data.resp_in_buffer < Sdo_data.seg_buffer_size )
+        {
+          Sdo_data.resp_buffer[Sdo_data.resp_in_buffer++] = rx[4+i];
+          // The only piece of data we will get, change status to success
+          Sdo_data.req_state = SDO_REQ_SUCCESS;
+        }
+        else
+        {
+          // SDO segment too big for buffer, abort
+          Sdo_data.req_state = SDO_REQ_FAIL;
+        }
+      }
+    }
     else if( (rx[0] & (7 << 5)) == 0x00 )
     {
       // Received response on request
