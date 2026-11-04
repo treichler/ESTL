@@ -129,7 +129,7 @@ error_code_t Scope_CmdParameterFunction(function_call_t function_call, int32_t *
         Scope_data.read_index = 0;
         Scope_data.state = SCOPE_DAQ;
       }
-      else
+      else if( *cmd != 0 )
         return VALUE_INVALID;
     }
     else
