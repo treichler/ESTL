@@ -485,12 +485,26 @@ uint8_t ParameterSdo_GetParameterEntry( uint16_t index, uint8_t subindex, uint32
 
       if( (OFFSET_PARAM_NAME == parameter_request) || (OFFSET_PARAM_INFO == parameter_request) )
       {
-        if( OFFSET_PARAM_NAME == parameter_request )
-          *data = (uint32_t)parameter_data.name;
-        else
-          *data = (uint32_t)Parameter_GetHelp(parameter_index);
+        uint32_t data_val = 0;
+        size_t data_len = 0;
 
-        *size = strlen( (char*)(*data) ) + 1;
+        if( OFFSET_PARAM_NAME == parameter_request )
+          data_val = (uint32_t)parameter_data.name;
+        else
+          data_val = (uint32_t)Parameter_GetHelp(parameter_index);
+
+        data_len = strlen( (char*)data_val ) + 1;
+
+        if( data_len <= sizeof(uint32_t) )
+        {
+          *data = *((uint32_t*)data_val); // string is 4 bytes or less, directly copy the first 4 bytes.
+          // this will technically leak 1 or 2 bytes of data after the string, if it is just 1 or 2 characters in length. This is not a security concern in this context, though.
+        }
+        else
+        {
+          *data = data_val; // use pointer value
+        }
+        *size = data_len;
 
         return CAN_SDOREQ_HANDLED_SEND;
       }
